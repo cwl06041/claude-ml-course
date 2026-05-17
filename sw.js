@@ -1,8 +1,8 @@
-/* Service Worker —— network-first 策略
-   每次启动 PWA 先尝试网络，拿到就是最新；
-   网络失败（离线）才用上次缓存。 */
+/* Service Worker —— network-first，并强制绕过 HTTP cache。
+   关键：iOS Safari 对 PWA 缓存非常激进（WebKit Bug 199110），
+   所以同源请求一律 cache:'no-store' 直接走网络，离线时回退到我们自己的 cache。 */
 
-const CACHE = 'ml-course-v1';
+const CACHE = 'ml-course-v2';
 
 self.addEventListener('install', () => {
   self.skipWaiting();
@@ -19,11 +19,11 @@ self.addEventListener('activate', e => {
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
   const url = new URL(e.request.url);
-  // 跨域资源（KaTeX / Prism CDN）走浏览器默认缓存，不接管
   if (url.origin !== self.location.origin) return;
 
+  const fresh = new Request(e.request, { cache: 'no-store' });
   e.respondWith(
-    fetch(e.request)
+    fetch(fresh)
       .then(resp => {
         if (resp && resp.ok) {
           const copy = resp.clone();
