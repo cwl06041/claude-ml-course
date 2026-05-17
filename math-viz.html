@@ -1,0 +1,384 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<title>线性回归 & 逻辑回归 数学图集</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+        onload="renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}]});"></script>
+<style>
+  :root { --fg:#222; --muted:#666; --grid:#e4e4e8; --axis:#888; --accent:#2563eb; --accent2:#dc2626; --bg:#fafafa; }
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Segoe UI", sans-serif;
+         max-width: 920px; margin: 40px auto; padding: 0 24px; color: var(--fg);
+         line-height: 1.7; background: var(--bg); }
+  h1 { font-size: 28px; margin: 0 0 6px; }
+  h2 { font-size: 22px; margin: 56px 0 8px; padding-bottom: 6px; border-bottom: 2px solid #333; }
+  h3 { font-size: 17px; margin: 24px 0 8px; color: #444; }
+  .lead { color: var(--muted); margin-bottom: 0; }
+  .card { background: #fff; border: 1px solid #e0e0e4; border-radius: 8px; padding: 20px 24px; margin: 16px 0;
+          box-shadow: 0 1px 3px rgba(0,0,0,.04); }
+  svg { display: block; margin: 8px auto; max-width: 100%; height: auto; }
+  .legend { display: flex; gap: 18px; justify-content: center; font-size: 14px; color: #444; flex-wrap: wrap; }
+  .swatch { display: inline-block; width: 16px; height: 3px; vertical-align: middle; margin-right: 6px; }
+  .note { font-size: 14px; color: var(--muted); margin-top: 6px; }
+  table { border-collapse: collapse; margin: 12px 0; font-size: 14px; }
+  th, td { border: 1px solid #ddd; padding: 6px 12px; text-align: center; }
+  th { background: #f0f0f3; }
+  .controls { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; margin: 10px 0;
+              padding: 10px 14px; background: #f6f6f9; border-radius: 6px; font-size: 14px; }
+  .controls label { display: inline-flex; align-items: center; gap: 8px; }
+  input[type=range] { width: 160px; }
+  .val { font-family: ui-monospace, monospace; color: var(--accent); min-width: 50px; display: inline-block; }
+  .toc a { color: var(--accent); text-decoration: none; margin-right: 14px; }
+  .toc a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+
+<h1>线性回归 & 逻辑回归 · 数学图集</h1>
+<p class="lead">用 SVG 准确绘制，点公式可放大，参数滑动条可实时调节。</p>
+
+<div class="toc card">
+  <strong>目录：</strong>
+  <a href="#linear">① 线性回归与残差</a>
+  <a href="#losses">② 平方损失 vs 绝对值损失</a>
+  <a href="#sigmoid">③ Sigmoid 曲线</a>
+  <a href="#logloss">④ 对数损失的爆炸</a>
+  <a href="#sigderiv">⑤ Sigmoid 导数与梯度消失</a>
+  <a href="#gauss">⑥ 高斯分布 & MLE 直觉</a>
+</div>
+
+<!-- ============== 1 ============== -->
+<section id="linear" class="card">
+  <h2>① 线性回归：直线 + 残差</h2>
+  <p>调整 $w$（斜率）和 $b$（截距），观察灰色虚线（残差）的长度。平方损失就是<strong>所有虚线长度的平方和</strong>。</p>
+  <div class="controls">
+    <label>w = <input type="range" id="lr-w" min="-1" max="4" step="0.05" value="1.5"><span class="val" id="lr-w-val">1.50</span></label>
+    <label>b = <input type="range" id="lr-b" min="-3" max="3" step="0.1" value="0.5"><span class="val" id="lr-b-val">0.50</span></label>
+    <span>平方损失 SSE = <span class="val" id="lr-sse"></span></span>
+  </div>
+  <svg id="plot-linear" viewBox="0 0 640 380"></svg>
+</section>
+
+<!-- ============== 2 ============== -->
+<section id="losses" class="card">
+  <h2>② 平方损失 vs 绝对值损失</h2>
+  <p>真值 $y=3$，看损失随预测 $\hat{y}$ 的变化。<strong>V 字尖</strong>在绝对值损失的谷底——那里导数从 −1 突跳到 +1，所以"不可导"。</p>
+  <svg id="plot-losses" viewBox="0 0 640 380"></svg>
+  <div class="legend">
+    <span><span class="swatch" style="background:#2563eb"></span>平方损失 $(\hat{y}-y)^2$</span>
+    <span><span class="swatch" style="background:#dc2626"></span>绝对值损失 $|\hat{y}-y|$</span>
+  </div>
+  <h3>对应的导数（关键差别）</h3>
+  <svg id="plot-loss-deriv" viewBox="0 0 640 320"></svg>
+  <p class="note">平方损失的导数是一条<strong>连续的斜线</strong>；绝对值损失的导数是 ±1 阶跃，在 $\hat{y}=3$ 处<strong>跳跃</strong>——这就是"不处处可导"。</p>
+</section>
+
+<!-- ============== 3 ============== -->
+<section id="sigmoid" class="card">
+  <h2>③ Sigmoid 曲线 $\sigma(z) = 1/(1+e^{-z})$</h2>
+  <svg id="plot-sigmoid" viewBox="0 0 640 380"></svg>
+  <table style="margin:12px auto;">
+    <tr><th>z</th><th>σ(z)</th><th>含义</th></tr>
+    <tr><td>−∞</td><td>0</td><td>笃定不发生</td></tr>
+    <tr><td>−3</td><td>0.047</td><td>几乎不会</td></tr>
+    <tr><td>0</td><td><strong>0.5</strong></td><td><strong>决策边界</strong></td></tr>
+    <tr><td>3</td><td>0.953</td><td>很可能</td></tr>
+    <tr><td>+∞</td><td>1</td><td>笃定发生</td></tr>
+  </table>
+  <p class="note">中间 $|z|<2$ 是<strong>敏感区</strong>，两端 $|z|>4$ 是<strong>饱和区</strong>（曲线变平）。</p>
+</section>
+
+<!-- ============== 4 ============== -->
+<section id="logloss" class="card">
+  <h2>④ 对数损失为什么会"爆炸"</h2>
+  <p>真值 $y=1$，看损失随预测概率 $p$ 的变化。横轴 $p$ 越靠近 0，模型"自信地错"——对数损失（红）冲向无穷，平方损失（蓝）最多到 1。</p>
+  <svg id="plot-logloss" viewBox="0 0 640 380"></svg>
+  <div class="legend">
+    <span><span class="swatch" style="background:#2563eb"></span>平方损失 $(1-p)^2$（上限 1）</span>
+    <span><span class="swatch" style="background:#dc2626"></span>对数损失 $-\ln p$（→ ∞）</span>
+  </div>
+</section>
+
+<!-- ============== 5 ============== -->
+<section id="sigderiv" class="card">
+  <h2>⑤ Sigmoid 导数与梯度消失</h2>
+  <p>$\sigma'(z) = \sigma(z)(1-\sigma(z))$，钟形，最大值 0.25（在 z=0）。两端 $|z|>4$ 几乎为 0——这就是平方损失配 sigmoid 会"梯度消失"的根源。</p>
+  <svg id="plot-sigderiv" viewBox="0 0 640 360"></svg>
+  <p class="note">对数损失通过求导消掉了这个 $\sigma'(z)$ 因子，所以梯度永远是 $(p-y)x$，不会消失。</p>
+</section>
+
+<!-- ============== 6 ============== -->
+<section id="gauss" class="card">
+  <h2>⑥ 高斯分布与平方损失的来源</h2>
+  <p>调 $\sigma$ 改变钟形宽度。<strong>每条样本"在模型下出现的可能性" = 残差 ε 在这条钟形里的高度</strong>。残差越靠近 0，高度越高 → 似然越大 → 该样本越"合理"。</p>
+  <div class="controls">
+    <label>σ = <input type="range" id="g-sigma" min="0.3" max="2.5" step="0.05" value="1.0"><span class="val" id="g-sigma-val">1.00</span></label>
+  </div>
+  <svg id="plot-gauss" viewBox="0 0 640 360"></svg>
+  <h3>关键推导</h3>
+  <p>密度 $f(\varepsilon) = \dfrac{1}{\sqrt{2\pi\sigma^2}} e^{-\varepsilon^2/(2\sigma^2)}$</p>
+  <p>对 n 个独立样本，似然 $\mathcal{L} = \prod f(y_i - w x_i - b)$，取对数：</p>
+  <p>$$\ln \mathcal{L} = \text{const} - \frac{1}{2\sigma^2}\sum (y_i - w x_i - b)^2$$</p>
+  <p>最大化 $\ln \mathcal{L}$ ⇔ 最小化 $\sum (y_i - \hat{y}_i)^2$ —— <strong>这就是平方损失</strong>。</p>
+</section>
+
+<script>
+// ============ 通用绘图工具 ============
+const NS = "http://www.w3.org/2000/svg";
+
+function svgEl(tag, attrs={}) {
+  const el = document.createElementNS(NS, tag);
+  for (const k in attrs) el.setAttribute(k, attrs[k]);
+  return el;
+}
+
+function makeAxes(svg, opts) {
+  const { xMin, xMax, yMin, yMax, w, h, m, xTicks, yTicks, xLabel, yLabel, title } = opts;
+  const pw = w - m.l - m.r, ph = h - m.t - m.b;
+  const xPx = x => m.l + (x - xMin) / (xMax - xMin) * pw;
+  const yPx = y => m.t + ph - (y - yMin) / (yMax - yMin) * ph;
+
+  // gridlines
+  for (const t of xTicks) {
+    const px = xPx(t);
+    svg.appendChild(svgEl("line", {x1:px,y1:m.t,x2:px,y2:m.t+ph,stroke:"#e4e4e8","stroke-width":1}));
+    const tx = svgEl("text", {x:px, y:m.t+ph+18, "text-anchor":"middle", "font-size":12, fill:"#666"});
+    tx.textContent = t;
+    svg.appendChild(tx);
+  }
+  for (const t of yTicks) {
+    const py = yPx(t);
+    svg.appendChild(svgEl("line", {x1:m.l,y1:py,x2:m.l+pw,y2:py,stroke:"#e4e4e8","stroke-width":1}));
+    const tx = svgEl("text", {x:m.l-8, y:py+4, "text-anchor":"end", "font-size":12, fill:"#666"});
+    tx.textContent = t;
+    svg.appendChild(tx);
+  }
+
+  // x=0, y=0 axes if visible
+  if (xMin < 0 && xMax > 0) {
+    const px = xPx(0);
+    svg.appendChild(svgEl("line", {x1:px,y1:m.t,x2:px,y2:m.t+ph,stroke:"#888","stroke-width":1.2}));
+  }
+  if (yMin < 0 && yMax > 0) {
+    const py = yPx(0);
+    svg.appendChild(svgEl("line", {x1:m.l,y1:py,x2:m.l+pw,y2:py,stroke:"#888","stroke-width":1.2}));
+  }
+
+  // outer frame
+  svg.appendChild(svgEl("rect", {x:m.l,y:m.t,width:pw,height:ph,fill:"none",stroke:"#bbb","stroke-width":1}));
+
+  // labels
+  if (xLabel) {
+    const t = svgEl("text", {x:m.l+pw/2, y:h-6, "text-anchor":"middle", "font-size":13, fill:"#444"});
+    t.textContent = xLabel;
+    svg.appendChild(t);
+  }
+  if (yLabel) {
+    const t = svgEl("text", {x:14, y:m.t+ph/2, "text-anchor":"middle", "font-size":13, fill:"#444",
+                              transform:`rotate(-90, 14, ${m.t+ph/2})`});
+    t.textContent = yLabel;
+    svg.appendChild(t);
+  }
+  if (title) {
+    const t = svgEl("text", {x:m.l+pw/2, y:m.t-6, "text-anchor":"middle", "font-size":14, fill:"#222","font-weight":600});
+    t.textContent = title;
+    svg.appendChild(t);
+  }
+
+  return { xPx, yPx, pw, ph };
+}
+
+function plotCurve(svg, fn, xMin, xMax, xPx, yPx, color="#2563eb", width=2.2, dash=null, samples=400) {
+  const pts = [];
+  for (let i = 0; i <= samples; i++) {
+    const x = xMin + (xMax - xMin) * i / samples;
+    const y = fn(x);
+    if (isFinite(y)) pts.push([xPx(x), yPx(y)]);
+  }
+  const d = pts.map((p, i) => (i===0?"M":"L") + p[0] + "," + p[1]).join(" ");
+  const path = svgEl("path", {d, stroke:color, "stroke-width":width, fill:"none"});
+  if (dash) path.setAttribute("stroke-dasharray", dash);
+  svg.appendChild(path);
+}
+
+function dot(svg, x, y, color, r=4) {
+  svg.appendChild(svgEl("circle", {cx:x, cy:y, r, fill:color, stroke:"white","stroke-width":1.5}));
+}
+
+function label(svg, x, y, text, color="#222", size=12, anchor="start") {
+  const t = svgEl("text", {x, y, "font-size":size, fill:color, "text-anchor":anchor});
+  t.textContent = text;
+  svg.appendChild(t);
+}
+
+function clear(svg) { while (svg.firstChild) svg.removeChild(svg.firstChild); }
+
+// =============== ① 线性回归 ===============
+const lrData = [
+  [0.5, 1.2], [1.0, 2.1], [1.5, 2.5], [2.0, 3.8], [2.5, 4.1],
+  [3.0, 5.2], [3.5, 5.5], [4.0, 7.0], [4.5, 7.4], [5.0, 8.5]
+];
+function drawLinear() {
+  const svg = document.getElementById("plot-linear");
+  clear(svg);
+  const w = +document.getElementById("lr-w").value;
+  const b = +document.getElementById("lr-b").value;
+  document.getElementById("lr-w-val").textContent = w.toFixed(2);
+  document.getElementById("lr-b-val").textContent = b.toFixed(2);
+  const ax = makeAxes(svg, {xMin:0, xMax:6, yMin:-1, yMax:10, w:640, h:380,
+    m:{l:50,r:20,t:20,b:40}, xTicks:[0,1,2,3,4,5,6], yTicks:[0,2,4,6,8,10],
+    xLabel:"x", yLabel:"y"});
+  // 回归线
+  plotCurve(svg, x => w*x+b, 0, 6, ax.xPx, ax.yPx, "#2563eb", 2.4);
+  // 残差虚线 + 数据点
+  let sse = 0;
+  for (const [x, y] of lrData) {
+    const yhat = w*x+b;
+    sse += (y-yhat)*(y-yhat);
+    svg.appendChild(svgEl("line", {x1:ax.xPx(x), y1:ax.yPx(y), x2:ax.xPx(x), y2:ax.yPx(yhat),
+                                    stroke:"#888","stroke-width":1.2, "stroke-dasharray":"3,3"}));
+    dot(svg, ax.xPx(x), ax.yPx(y), "#dc2626", 4);
+  }
+  document.getElementById("lr-sse").textContent = sse.toFixed(2);
+}
+document.getElementById("lr-w").addEventListener("input", drawLinear);
+document.getElementById("lr-b").addEventListener("input", drawLinear);
+drawLinear();
+
+// =============== ② 平方 vs 绝对值损失 ===============
+(function(){
+  const svg = document.getElementById("plot-losses");
+  const ax = makeAxes(svg, {xMin:0, xMax:6, yMin:0, yMax:10, w:640, h:380,
+    m:{l:50,r:20,t:20,b:40}, xTicks:[0,1,2,3,4,5,6], yTicks:[0,2,4,6,8,10],
+    xLabel:"ŷ（预测值，真值 y=3）", yLabel:"损失 L"});
+  plotCurve(svg, x => (x-3)*(x-3), 0, 6, ax.xPx, ax.yPx, "#2563eb", 2.4);
+  plotCurve(svg, x => Math.abs(x-3), 0, 6, ax.xPx, ax.yPx, "#dc2626", 2.4);
+  // 标 V 字尖
+  dot(svg, ax.xPx(3), ax.yPx(0), "#dc2626", 5);
+  label(svg, ax.xPx(3)+8, ax.yPx(0)-6, "V 字尖（不可导）", "#dc2626", 12);
+})();
+
+(function(){
+  const svg = document.getElementById("plot-loss-deriv");
+  const ax = makeAxes(svg, {xMin:0, xMax:6, yMin:-3, yMax:3, w:640, h:320,
+    m:{l:50,r:20,t:20,b:40}, xTicks:[0,1,2,3,4,5,6], yTicks:[-3,-2,-1,0,1,2,3],
+    xLabel:"ŷ", yLabel:"L'(ŷ)"});
+  // 平方损失导数: 2(ŷ-3) —— 斜线
+  plotCurve(svg, x => 2*(x-3), 0, 6, ax.xPx, ax.yPx, "#2563eb", 2.4);
+  // 绝对值损失导数: sign(ŷ-3)  —— 阶跃
+  // 用两段实线 + 跳跃虚线
+  svg.appendChild(svgEl("line", {x1:ax.xPx(0), y1:ax.yPx(-1), x2:ax.xPx(3), y2:ax.yPx(-1),
+                                  stroke:"#dc2626","stroke-width":2.4}));
+  svg.appendChild(svgEl("line", {x1:ax.xPx(3), y1:ax.yPx(1), x2:ax.xPx(6), y2:ax.yPx(1),
+                                  stroke:"#dc2626","stroke-width":2.4}));
+  // 跳跃
+  svg.appendChild(svgEl("line", {x1:ax.xPx(3), y1:ax.yPx(-1), x2:ax.xPx(3), y2:ax.yPx(1),
+                                  stroke:"#dc2626","stroke-width":1.2,"stroke-dasharray":"4,3"}));
+  // 空心圆 + 实心圆表示间断
+  svg.appendChild(svgEl("circle", {cx:ax.xPx(3), cy:ax.yPx(-1), r:4, fill:"white", stroke:"#dc2626","stroke-width":1.8}));
+  svg.appendChild(svgEl("circle", {cx:ax.xPx(3), cy:ax.yPx(1), r:4, fill:"white", stroke:"#dc2626","stroke-width":1.8}));
+  label(svg, ax.xPx(3)+8, ax.yPx(0), "← 跳跃", "#dc2626", 12);
+})();
+
+// =============== ③ Sigmoid ===============
+(function(){
+  const svg = document.getElementById("plot-sigmoid");
+  const sigma = z => 1/(1+Math.exp(-z));
+  const ax = makeAxes(svg, {xMin:-6, xMax:6, yMin:-0.1, yMax:1.1, w:640, h:380,
+    m:{l:50,r:20,t:20,b:40}, xTicks:[-6,-4,-2,0,2,4,6], yTicks:[0,0.25,0.5,0.75,1],
+    xLabel:"z = wᵀx + b", yLabel:"σ(z)"});
+  // 渐近线
+  svg.appendChild(svgEl("line", {x1:ax.xPx(-6), y1:ax.yPx(0), x2:ax.xPx(6), y2:ax.yPx(0),
+                                  stroke:"#aaa","stroke-width":1,"stroke-dasharray":"4,4"}));
+  svg.appendChild(svgEl("line", {x1:ax.xPx(-6), y1:ax.yPx(1), x2:ax.xPx(6), y2:ax.yPx(1),
+                                  stroke:"#aaa","stroke-width":1,"stroke-dasharray":"4,4"}));
+  // 敏感区阴影
+  svg.appendChild(svgEl("rect", {x:ax.xPx(-2), y:ax.yPx(1.1), width:ax.xPx(2)-ax.xPx(-2),
+                                  height:ax.yPx(-0.1)-ax.yPx(1.1), fill:"#fef3c7", opacity:0.5}));
+  label(svg, ax.xPx(0), ax.yPx(1.1)+14, "敏感区", "#a16207", 12, "middle");
+  plotCurve(svg, sigma, -6, 6, ax.xPx, ax.yPx, "#2563eb", 2.6);
+  // 关键点
+  dot(svg, ax.xPx(0), ax.yPx(0.5), "#dc2626", 5);
+  label(svg, ax.xPx(0)+8, ax.yPx(0.5)-6, "(0, 0.5) 决策边界", "#dc2626", 12);
+  dot(svg, ax.xPx(-3), ax.yPx(sigma(-3)), "#16a34a", 4);
+  dot(svg, ax.xPx(3), ax.yPx(sigma(3)), "#16a34a", 4);
+})();
+
+// =============== ④ 对数损失 ===============
+(function(){
+  const svg = document.getElementById("plot-logloss");
+  const ax = makeAxes(svg, {xMin:0, xMax:1, yMin:0, yMax:6, w:640, h:380,
+    m:{l:50,r:20,t:20,b:40}, xTicks:[0,0.2,0.4,0.6,0.8,1], yTicks:[0,1,2,3,4,5,6],
+    xLabel:"预测概率 p（真值 y=1）", yLabel:"损失"});
+  // 平方损失上限参考线
+  svg.appendChild(svgEl("line", {x1:ax.xPx(0), y1:ax.yPx(1), x2:ax.xPx(1), y2:ax.yPx(1),
+                                  stroke:"#2563eb","stroke-width":1,"stroke-dasharray":"4,4", opacity:0.5}));
+  label(svg, ax.xPx(0.05), ax.yPx(1)-4, "平方上限=1", "#2563eb", 11);
+  plotCurve(svg, p => (1-p)*(1-p), 0.001, 1, ax.xPx, ax.yPx, "#2563eb", 2.4);
+  plotCurve(svg, p => -Math.log(p), 0.0025, 1, ax.xPx, ax.yPx, "#dc2626", 2.4);
+  // 标注点
+  const pts = [0.5, 0.1, 0.01];
+  for (const p of pts) {
+    dot(svg, ax.xPx(p), ax.yPx(-Math.log(p)), "#dc2626", 3.5);
+    label(svg, ax.xPx(p)+5, ax.yPx(-Math.log(p))-4, `p=${p}: ${(-Math.log(p)).toFixed(2)}`, "#dc2626", 11);
+  }
+})();
+
+// =============== ⑤ Sigmoid 导数 ===============
+(function(){
+  const svg = document.getElementById("plot-sigderiv");
+  const sigma = z => 1/(1+Math.exp(-z));
+  const dSigma = z => sigma(z)*(1-sigma(z));
+  const ax = makeAxes(svg, {xMin:-6, xMax:6, yMin:0, yMax:0.3, w:640, h:360,
+    m:{l:50,r:20,t:20,b:40}, xTicks:[-6,-4,-2,0,2,4,6], yTicks:[0,0.05,0.1,0.15,0.2,0.25,0.3],
+    xLabel:"z", yLabel:"σ'(z) = σ(z)(1−σ(z))"});
+  // 饱和区阴影
+  svg.appendChild(svgEl("rect", {x:ax.xPx(-6), y:ax.yPx(0.3), width:ax.xPx(-4)-ax.xPx(-6),
+                                  height:ax.yPx(0)-ax.yPx(0.3), fill:"#fee2e2", opacity:0.5}));
+  svg.appendChild(svgEl("rect", {x:ax.xPx(4), y:ax.yPx(0.3), width:ax.xPx(6)-ax.xPx(4),
+                                  height:ax.yPx(0)-ax.yPx(0.3), fill:"#fee2e2", opacity:0.5}));
+  label(svg, ax.xPx(-5), ax.yPx(0.28), "梯度消失区", "#b91c1c", 11, "middle");
+  label(svg, ax.xPx(5), ax.yPx(0.28), "梯度消失区", "#b91c1c", 11, "middle");
+  plotCurve(svg, dSigma, -6, 6, ax.xPx, ax.yPx, "#7c3aed", 2.6);
+  dot(svg, ax.xPx(0), ax.yPx(0.25), "#7c3aed", 5);
+  label(svg, ax.xPx(0)+8, ax.yPx(0.25)-4, "最大值 0.25 @ z=0", "#7c3aed", 12);
+})();
+
+// =============== ⑥ 高斯 ===============
+function drawGauss() {
+  const svg = document.getElementById("plot-gauss");
+  clear(svg);
+  const sig = +document.getElementById("g-sigma").value;
+  document.getElementById("g-sigma-val").textContent = sig.toFixed(2);
+  const ax = makeAxes(svg, {xMin:-5, xMax:5, yMin:0, yMax:1.4, w:640, h:360,
+    m:{l:50,r:20,t:20,b:40}, xTicks:[-5,-4,-3,-2,-1,0,1,2,3,4,5], yTicks:[0,0.2,0.4,0.6,0.8,1.0,1.2,1.4],
+    xLabel:"残差 ε = y − ŷ", yLabel:"概率密度 f(ε)"});
+  const f = e => Math.exp(-e*e/(2*sig*sig))/(Math.sqrt(2*Math.PI)*sig);
+  // 阴影填充
+  const samples = 200;
+  let dStr = `M ${ax.xPx(-5)},${ax.yPx(0)} `;
+  for (let i = 0; i <= samples; i++) {
+    const e = -5 + 10*i/samples;
+    dStr += `L ${ax.xPx(e)},${ax.yPx(f(e))} `;
+  }
+  dStr += `L ${ax.xPx(5)},${ax.yPx(0)} Z`;
+  svg.appendChild(svgEl("path", {d:dStr, fill:"#dbeafe", opacity:0.6}));
+  plotCurve(svg, f, -5, 5, ax.xPx, ax.yPx, "#2563eb", 2.6);
+  // 标几个残差点
+  const eps = [-1.5, 0.3, 2.0];
+  for (const e of eps) {
+    svg.appendChild(svgEl("line", {x1:ax.xPx(e), y1:ax.yPx(0), x2:ax.xPx(e), y2:ax.yPx(f(e)),
+                                    stroke:"#dc2626","stroke-width":1.5,"stroke-dasharray":"3,3"}));
+    dot(svg, ax.xPx(e), ax.yPx(f(e)), "#dc2626", 4);
+    label(svg, ax.xPx(e)+5, ax.yPx(f(e))-6, `ε=${e}`, "#dc2626", 11);
+  }
+}
+document.getElementById("g-sigma").addEventListener("input", drawGauss);
+drawGauss();
+</script>
+
+</body>
+</html>

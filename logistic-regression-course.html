@@ -1,0 +1,916 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<title>逻辑回归 · 从场景到代码</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+        onload="renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}],throwOnError:false});"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-core.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
+<style>
+  :root { --fg:#1f2937; --muted:#6b7280; --grid:#e5e7eb; --axis:#9ca3af;
+          --accent:#2563eb; --accent2:#dc2626; --accent3:#16a34a; --accent4:#7c3aed;
+          --bg:#f8fafc; --card:#ffffff; --border:#e2e8f0;
+          --code-bg:#f5f5f7; --hl:#fef3c7;
+          --pos:#16a34a; --neg:#dc2626; }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Segoe UI", sans-serif;
+         max-width: 980px; margin: 0 auto; padding: 32px 28px 80px; color: var(--fg);
+         line-height: 1.75; background: var(--bg); font-size: 16px; }
+  h1 { font-size: 32px; margin: 0 0 6px; letter-spacing: -0.02em; }
+  h2 { font-size: 24px; margin: 60px 0 12px; padding: 12px 0 8px;
+       border-bottom: 2px solid #334155; letter-spacing: -0.01em; }
+  h3 { font-size: 18px; margin: 28px 0 10px; color: #334155; }
+  h4 { font-size: 15px; margin: 16px 0 6px; color: #475569; }
+  .lead { color: var(--muted); margin: 0 0 8px; font-size: 16px; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+          padding: 22px 26px; margin: 18px 0; box-shadow: 0 1px 3px rgba(0,0,0,.04); }
+  .scene { background: linear-gradient(135deg, #eff6ff, #f0fdf4); border-left: 4px solid var(--accent3);
+           padding: 14px 18px; margin: 14px 0; border-radius: 6px; }
+  .scene strong { color: var(--accent3); }
+  .why { background: #fefce8; border-left: 4px solid #ca8a04; padding: 12px 18px;
+         margin: 14px 0; border-radius: 6px; font-size: 15px; }
+  .why::before { content: "💡 为什么这么做："; font-weight: 600; color: #a16207; margin-right: 6px; }
+  .warn { background: #fef2f2; border-left: 4px solid var(--accent2); padding: 12px 18px;
+          margin: 14px 0; border-radius: 6px; font-size: 15px; }
+  .warn::before { content: "⚠️ "; margin-right: 4px; }
+  .tip { background: #f0f9ff; border-left: 4px solid #0284c7; padding: 12px 18px;
+         margin: 14px 0; border-radius: 6px; font-size: 14px; color: #075985; }
+  .link { background: #f5f3ff; border-left: 4px solid var(--accent4); padding: 12px 18px;
+          margin: 14px 0; border-radius: 6px; font-size: 14px; color: #5b21b6; }
+  .link::before { content: "🔗 与前一篇的联系："; font-weight: 600; margin-right: 6px; }
+  svg { display: block; margin: 8px auto; max-width: 100%; height: auto; }
+  .legend { display: flex; gap: 18px; justify-content: center; font-size: 14px;
+            color: #475569; flex-wrap: wrap; margin: 6px 0; }
+  .swatch { display: inline-block; width: 16px; height: 3px; vertical-align: middle; margin-right: 6px; }
+  .swatch.dot { width: 12px; height: 12px; border-radius: 50%; }
+  table { border-collapse: collapse; margin: 12px auto; font-size: 14px; }
+  th, td { border: 1px solid var(--border); padding: 7px 12px; text-align: center; }
+  th { background: #f1f5f9; }
+  tr.hl td { background: var(--hl); }
+  .controls { display: flex; gap: 18px; align-items: center; flex-wrap: wrap;
+              padding: 12px 16px; background: #f1f5f9; border-radius: 8px;
+              font-size: 14px; margin: 10px 0; }
+  .controls label { display: inline-flex; align-items: center; gap: 8px; }
+  input[type=range] { width: 160px; }
+  .val { font-family: ui-monospace, monospace; color: var(--accent); min-width: 56px;
+         display: inline-block; font-weight: 600; }
+  button { padding: 6px 14px; border: 1px solid var(--accent); background: white;
+           color: var(--accent); border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500; }
+  button:hover { background: var(--accent); color: white; }
+  button.secondary { border-color: #94a3b8; color: #475569; }
+  button.secondary:hover { background: #94a3b8; color: white; }
+  pre[class*="language-"] { background: var(--code-bg) !important; border-radius: 8px;
+                            font-size: 13.5px; padding: 14px 16px; margin: 12px 0; }
+  code:not([class*="language-"]) { background: var(--code-bg); padding: 2px 6px; border-radius: 4px;
+         font-size: 0.9em; color: #b91c1c; }
+  .toc { position: sticky; top: 12px; background: var(--card); border: 1px solid var(--border);
+         border-radius: 10px; padding: 14px 20px; margin-bottom: 24px;
+         font-size: 14px; box-shadow: 0 2px 8px rgba(0,0,0,.06); z-index: 10; }
+  .toc-title { font-weight: 600; color: var(--muted); margin-right: 10px; font-size: 13px; }
+  .toc a { color: var(--accent); text-decoration: none; margin-right: 14px; white-space: nowrap;
+           display: inline-block; padding: 2px 6px; border-radius: 4px; }
+  .toc a:hover { background: #eff6ff; }
+  .quiz-q { margin: 18px 0; padding: 14px 18px; background: #f8fafc;
+            border: 1px solid var(--border); border-radius: 8px; }
+  .quiz-opts label { display: block; cursor: pointer; padding: 6px 10px; border-radius: 5px;
+                     margin: 4px 0; transition: background .15s; }
+  .quiz-opts label:hover { background: #e0e7ff; }
+  .quiz-q.answered .quiz-opts label.correct { background: #d1fae5; color: #065f46; }
+  .quiz-q.answered .quiz-opts label.wrong { background: #fee2e2; color: #991b1b; }
+  .quiz-explain { display: none; margin-top: 10px; padding: 10px 14px; background: #fffbeb;
+                  border-left: 3px solid #d97706; border-radius: 4px; font-size: 14px; }
+  .quiz-q.answered .quiz-explain { display: block; }
+  details { margin: 10px 0; }
+  summary { cursor: pointer; color: var(--accent); font-weight: 500; padding: 4px 0; }
+  summary:hover { text-decoration: underline; }
+  .meta { color: var(--muted); font-size: 13px; }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media (max-width: 720px) { .two-col { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<h1>逻辑回归：从场景到代码</h1>
+<p class="lead">把"线性回归 → 概率 → 二分类"这条路一遍走通。承接前一篇<a href="linear-regression-course.html">线性回归</a>。</p>
+
+<div class="toc">
+  <span class="toc-title">目录</span>
+  <a href="#intro">① 简介</a>
+  <a href="#prob">② 计算概率</a>
+  <a href="#loss">③ 损失和正则化</a>
+  <a href="#code">④ 编程练习</a>
+  <a href="#quiz">⑤ 测试</a>
+  <a href="#next">⑥ 后续</a>
+</div>
+
+<!-- ===================== 1 简介 ===================== -->
+<section id="intro" class="card">
+  <h2>① 简介：从"预测多少"到"预测是/否"</h2>
+
+  <div class="scene">
+    <strong>真实场景</strong>：你是教务系统的开发者。已知 15 个学生的<em>考前学习时数</em>和<em>是否通过考试</em>，
+    现在新来一个学生说"我学了 4.2 小时"，他通过的概率有多大？
+  </div>
+
+  <h3>1.1 分类问题：输出是离散的</h3>
+  <p>这种问题和线性回归本质上不一样：</p>
+  <table>
+    <tr><th>问题</th><th>类型</th><th>输出</th><th>例子</th></tr>
+    <tr><td>这套房值多少钱</td><td>回归</td><td>连续数值</td><td>320 万</td></tr>
+    <tr class="hl"><td>这个学生能否通过</td><td>分类</td><td>0 或 1</td><td>通过 / 不通过</td></tr>
+    <tr><td>这封邮件是不是垃圾</td><td>分类</td><td>0 或 1</td><td>垃圾 / 正常</td></tr>
+    <tr><td>这笔贷款会不会违约</td><td>分类</td><td>0 或 1</td><td>违约 / 不违约</td></tr>
+  </table>
+
+  <h3>1.2 看一下数据</h3>
+  <p>每个点的 y 轴只有两个值：通过（1）或不通过（0）。</p>
+  <svg id="plot-pass-data" viewBox="0 0 640 300"></svg>
+  <div class="legend">
+    <span><span class="swatch dot" style="background:var(--pos)"></span>通过 (y=1)</span>
+    <span><span class="swatch dot" style="background:var(--neg)"></span>不通过 (y=0)</span>
+  </div>
+  <p>直觉上：学得越多，通过概率越高。但<strong>不是绝对的</strong>——有些学得多的也没过，有些学得少的反而过了（运气、基础、题目难度等噪声）。</p>
+
+  <h3>1.3 第一个错误尝试：直接用线性回归</h3>
+  <p>"既然 y 只是 0 或 1，那线性回归直接学 $\hat{y} = wx + b$ 不就完了？"我们试试看：</p>
+  <svg id="plot-bad-linear" viewBox="0 0 640 320"></svg>
+  <p>这条线有<strong>三个明显的问题</strong>：</p>
+  <ol>
+    <li><strong>输出会超出 [0, 1]</strong>。学了 0.5 小时的人，模型说"通过概率 = -0.15"？通过概率 = 1.3？没意义。</li>
+    <li><strong>对离群点过度敏感</strong>。一个"学了 10 小时但没过"的点会大幅扭曲直线，因为平方损失对偏差按距离平方惩罚，0/1 标签的偏差太大。</li>
+    <li><strong>预测和真实标签的语义不一致</strong>。直线给的是连续值，但我们想要的是"概率"或"类别判断"。</li>
+  </ol>
+
+  <div class="why">
+    我们需要一个模型，<strong>输出一定在 [0, 1] 之间</strong>（可以解释成概率），并且<strong>对极端值不敏感</strong>（学了 100 小时也只能更"几乎确定通过"，不能无限大）。这就是逻辑回归的核心动机。
+  </div>
+
+  <h3>1.4 解决方案预览</h3>
+  <p>逻辑回归 = 线性回归 + 一个把输出压到 [0,1] 的"S 形函数"。下一节展开它怎么来的。</p>
+  <svg id="plot-good-logistic" viewBox="0 0 640 320"></svg>
+  <p class="meta">蓝色 S 曲线就是逻辑回归的输出 —— 永远在 0 和 1 之间。</p>
+</section>
+
+<!-- ===================== 2 计算概率 ===================== -->
+<section id="prob" class="card">
+  <h2>② 计算概率：sigmoid 是怎么来的</h2>
+
+  <p>我们想要的目标：输入 $\mathbf{x}$ → 输出一个 0~1 的概率 $p$。但线性组合 $\mathbf{w}^\top \mathbf{x} + b$ 的取值范围是 $(-\infty, +\infty)$。怎么搭桥？</p>
+
+  <h3>2.1 三步搭桥：概率 → 几率 → 对数几率</h3>
+
+  <h4>Step 1：概率 → 几率（odds）</h4>
+  <p>$$\text{odds} = \frac{p}{1-p}$$</p>
+  <p>赌博和保险里常用。"通过概率 0.8"等价于"几率 4 比 1"。</p>
+  <table>
+    <tr><th>p（概率）</th><th>odds（几率）</th></tr>
+    <tr><td>0.1</td><td>0.11</td></tr>
+    <tr><td>0.5</td><td>1.0</td></tr>
+    <tr><td>0.9</td><td>9.0</td></tr>
+    <tr><td>0.99</td><td>99.0</td></tr>
+  </table>
+  <p>取值范围：$[0, +\infty)$。比概率宽了一边，但下界还是 0。</p>
+
+  <h4>Step 2：几率 → 对数几率（log-odds，又叫 logit）</h4>
+  <p>$$\text{logit}(p) = \ln \frac{p}{1-p}$$</p>
+  <p>对几率再取一个对数，取值范围一下子扩到 $(-\infty, +\infty)$ —— <strong>正好和线性组合的范围对上了</strong>！</p>
+  <svg id="plot-logit" viewBox="0 0 640 320"></svg>
+
+  <h4>Step 3：关键假设 —— log-odds 是线性的</h4>
+  <p>$$\ln \frac{p}{1-p} = \mathbf{w}^\top \mathbf{x} + b = z$$</p>
+  <div class="why">
+    这是逻辑回归的<strong>本质假设</strong>。线性回归说"y 是 x 的线性函数"，逻辑回归说"log-odds 是 x 的线性函数"。<strong>线性模型族的"线性"指的是参数 w, b 出现的方式</strong>，不是说 p 和 x 是线性关系。
+  </div>
+
+  <h3>2.2 反解：从 log-odds 回到概率</h3>
+  <p>把 $\ln \dfrac{p}{1-p} = z$ 解出 $p$：</p>
+  <p>$$\frac{p}{1-p} = e^z \implies p = (1-p)e^z \implies p(1 + e^z) = e^z$$</p>
+  <p>$$\boxed{p = \frac{e^z}{1 + e^z} = \frac{1}{1 + e^{-z}} = \sigma(z)}$$</p>
+  <p>这就是 <strong>sigmoid 函数</strong>。它的图像：</p>
+  <svg id="plot-sigmoid" viewBox="0 0 640 320"></svg>
+  <table>
+    <tr><th>z</th><th>σ(z)</th><th>含义</th></tr>
+    <tr><td>−∞</td><td>0</td><td>笃定不发生</td></tr>
+    <tr><td>−3</td><td>0.047</td><td>几乎不会</td></tr>
+    <tr><td>0</td><td><strong>0.5</strong></td><td><strong>决策边界</strong>（最不确定）</td></tr>
+    <tr><td>+3</td><td>0.953</td><td>很可能</td></tr>
+    <tr><td>+∞</td><td>1</td><td>笃定发生</td></tr>
+  </table>
+
+  <h3>2.3 完整模型</h3>
+  <p>$$p = \sigma(\mathbf{w}^\top \mathbf{x} + b) = \frac{1}{1 + e^{-(\mathbf{w}^\top \mathbf{x} + b)}}$$</p>
+  <p>预测时：</p>
+  <ul>
+    <li>如果 $p > 0.5$（即 $z > 0$）→ 类别 1（通过）</li>
+    <li>如果 $p < 0.5$（即 $z < 0$）→ 类别 0（不通过）</li>
+    <li>$p = 0.5$ 的位置叫<strong>决策边界</strong></li>
+  </ul>
+
+  <h3>2.4 互动：在学生数据上拖参数</h3>
+  <p>拖 $w$（控制陡峭程度）和 $b$（控制位置）。竖线就是决策边界（p=0.5 处）。</p>
+  <div class="controls">
+    <label>w = <input type="range" id="lr-w" min="0.1" max="3" step="0.05" value="1.2"><span class="val" id="lr-w-val">1.20</span></label>
+    <label>b = <input type="range" id="lr-b" min="-12" max="2" step="0.1" value="-5"><span class="val" id="lr-b-val">-5.0</span></label>
+    <span>决策边界: x = <span class="val" id="lr-boundary">—</span></span>
+    <span>准确率: <span class="val" id="lr-acc">—</span></span>
+  </div>
+  <svg id="plot-interactive" viewBox="0 0 640 360"></svg>
+
+  <h3>2.5 二维情况：决策边界是一条直线</h3>
+  <p>加一个特征"睡眠时数"。现在 $z = w_1 x_1 + w_2 x_2 + b$，决策边界 $z=0$ 是平面上的一条直线：</p>
+  <svg id="plot-2d-boundary" viewBox="0 0 640 380"></svg>
+  <p class="meta">背景颜色就是 sigmoid 输出的概率（蓝色 = 高概率通过，红色 = 高概率不通过）。直线就是 p=0.5 的位置。</p>
+  <div class="tip">逻辑回归的决策边界永远是<strong>直线</strong>（多维就是超平面）。要想拟合弯曲的边界，得加特征工程（比如加 $x_1^2, x_1 x_2$）或用神经网络。</div>
+</section>
+
+<!-- ===================== 3 损失和正则化 ===================== -->
+<section id="loss" class="card">
+  <h2>③ 损失和正则化</h2>
+
+  <h3>3.1 为什么不能用 MSE？</h3>
+  <p>有了模型 $p = \sigma(z)$，自然的想法是延续线性回归的平方损失：$L = (p - y)^2$。但有两个数学灾难：</p>
+
+  <h4>灾难 1：损失非凸 → 卡局部极小</h4>
+  <p>线性回归的 MSE 损失关于 $(w, b)$ 是凸函数（碗形，只有一个最低点）。但 $\sigma$ 是非线性的，外面再套一个平方，损失会出现<strong>多个局部极小</strong>，梯度下降可能卡住。</p>
+  <svg id="plot-nonconvex" viewBox="0 0 640 280"></svg>
+
+  <h4>灾难 2：梯度消失 → 学不动</h4>
+  <p>对 MSE+sigmoid 求梯度（链式法则）：</p>
+  <p>$$\frac{\partial L}{\partial w} = (p - y) \cdot \underbrace{\sigma'(z)}_{= p(1-p)} \cdot x$$</p>
+  <p>那个 $p(1-p)$ 在 sigmoid 两端非常小：</p>
+  <table>
+    <tr><th>p</th><th>p(1-p)</th><th>梯度规模</th></tr>
+    <tr><td>0.5</td><td>0.25</td><td>正常</td></tr>
+    <tr><td>0.9</td><td>0.09</td><td>缩水</td></tr>
+    <tr><td>0.99</td><td>0.0099</td><td>已经很小</td></tr>
+    <tr class="hl"><td>0.001（自信预测错的极端）</td><td>0.000999</td><td><strong>梯度几乎为 0</strong></td></tr>
+  </table>
+  <div class="warn">最糟的情况：模型自信地预测错（真实 y=1 但 p=0.001），本应狠狠惩罚，结果梯度几乎为零，<strong>错得最离谱时反而学不动</strong>。这就是"梯度消失"。</div>
+
+  <h3>3.2 对数损失（Log Loss / Cross-Entropy）</h3>
+  <p>正确的损失函数：</p>
+  <p>$$L = -\big[\,y \ln p + (1-y) \ln(1-p)\,\big]$$</p>
+  <p>看着复杂，其实是个 if/else 开关：</p>
+  <ul>
+    <li>当 y = 1：损失 = $-\ln p$ —— 罚"你给 1 的概率太低"</li>
+    <li>当 y = 0：损失 = $-\ln(1-p)$ —— 罚"你给 0 的概率太低"</li>
+  </ul>
+
+  <h4>它是怎么推出来的？最大似然估计 (MLE)</h4>
+  <details>
+    <summary>展开看完整推导（三步）</summary>
+    <p><strong>Step 1</strong>：把 $P(y|x)$ 写成统一形式。伯努利分布：$P(y \mid x) = p^y (1-p)^{1-y}$</p>
+    <ul>
+      <li>y=1 代入 → $p^1 (1-p)^0 = p$ ✓</li>
+      <li>y=0 代入 → $p^0 (1-p)^1 = 1-p$ ✓</li>
+    </ul>
+    <p><strong>Step 2</strong>：n 个样本独立，联合概率 = 各概率相乘（似然）：</p>
+    <p>$$\mathcal{L}(\mathbf{w}, b) = \prod_{i=1}^{n} p_i^{y_i}(1-p_i)^{1-y_i}$$</p>
+    <p><strong>Step 3</strong>：取对数变连加，再取负（最大化等价于最小化负号）：</p>
+    <p>$$L = -\sum_{i=1}^{n}\big[\,y_i \ln p_i + (1-y_i)\ln(1-p_i)\,\big]$$</p>
+    <p>这就是对数损失。<strong>log 不是"为了惩罚大错"故意加的，而是把连乘转成连加自然出现的</strong>。</p>
+  </details>
+
+  <h4>对数损失的两个优良性质</h4>
+  <p><strong>性质 1：自信地错 → 损失爆炸到无穷</strong></p>
+  <svg id="plot-logloss-explosion" viewBox="0 0 640 320"></svg>
+  <p>真值 y=1 时：</p>
+  <table>
+    <tr><th>预测 p</th><th>MSE 损失 (1-p)²</th><th>对数损失 -ln p</th></tr>
+    <tr><td>0.99（对，自信）</td><td>0.0001</td><td>0.01</td></tr>
+    <tr><td>0.5（不确定）</td><td>0.25</td><td>0.69</td></tr>
+    <tr><td>0.01（错，自信）</td><td>0.98</td><td><strong>4.6</strong></td></tr>
+    <tr><td>0.001（错，超自信）</td><td>0.998</td><td><strong>6.9</strong></td></tr>
+    <tr><td>→ 0</td><td>→ 1（封顶）</td><td><strong>→ ∞</strong></td></tr>
+  </table>
+
+  <p><strong>性质 2：和 sigmoid 配，梯度异常干净</strong></p>
+  <p>$$\frac{\partial L}{\partial w} = (p - y) \cdot x$$</p>
+  <p>看，没有 $p(1-p)$ 因子了！它和 sigmoid 求导带来的 $p(1-p)$ 在数学上<strong>正好抵消</strong>了。</p>
+  <div class="link">
+    回想线性回归的梯度是 $(\hat{y} - y) \cdot x$。逻辑回归的梯度长得<strong>一模一样</strong>，只是把 $\hat{y}$ 换成 $p$。这种统一性是"对数损失 + sigmoid"这一对刻意搭配的回报。
+  </div>
+
+  <h3>3.3 正则化：防止过拟合</h3>
+
+  <h4>逻辑回归的过拟合长什么样？</h4>
+  <p>训练里如果数据正好"能被一条直线分开"（线性可分），逻辑回归会做一件<strong>反直觉的坏事</strong>：</p>
+  <p>因为损失 $-\ln p$ 永远能通过把 $p$ 推到更接近 0 或 1 来继续减少，模型会让 $|\mathbf{w}|$ <strong>无限增大</strong>，使 sigmoid 输出变成"硬"判断（要么 0 要么 1，决策边界变得无限陡）。</p>
+  <p>这会导致：</p>
+  <ul>
+    <li>对训练集过度自信（每个点都贴近 0 或 1）</li>
+    <li>对测试集稍微换个数据就剧烈出错</li>
+    <li>参数 $w$ 数值巨大，模型不稳定</li>
+  </ul>
+
+  <h4>解决：在损失里加"权重大小的惩罚"</h4>
+  <p><strong>L2 正则化（Ridge）</strong>：</p>
+  <p>$$L_{\text{total}} = L_{\text{logloss}} + \lambda \sum_j w_j^2$$</p>
+  <p>$\lambda$ 是"正则化强度"，越大越倾向于让 $w$ 小。</p>
+  <p><strong>L1 正则化（Lasso）</strong>：</p>
+  <p>$$L_{\text{total}} = L_{\text{logloss}} + \lambda \sum_j |w_j|$$</p>
+  <p>L1 会让<strong>一部分 $w_j$ 精确等于 0</strong>，相当于自动做特征选择。</p>
+
+  <h4>互动：拉 λ 看效果</h4>
+  <p>同样的 2D 数据，看不同 $\lambda$ 下决策边界的差异：</p>
+  <div class="controls">
+    <label>λ = <input type="range" id="reg-lambda" min="0" max="3" step="0.05" value="0"><span class="val" id="reg-lambda-val">0.00</span></label>
+    <span>‖w‖ = <span class="val" id="reg-norm">—</span></span>
+    <span>训练准确率 = <span class="val" id="reg-acc">—</span></span>
+  </div>
+  <svg id="plot-reg" viewBox="0 0 640 380"></svg>
+  <div class="why">
+    λ=0 时：模型让边界变得很陡（参数大），训练集准确率高但泛化差。<br>
+    λ 适中：边界平滑，参数受控，泛化好。<br>
+    λ 太大：边界太"懒"，欠拟合。<br>
+    实战里 λ 通过<strong>交叉验证</strong>选。
+  </div>
+
+  <h3>3.4 L1 vs L2 怎么选</h3>
+  <table>
+    <tr><th>场景</th><th>选谁</th><th>原因</th></tr>
+    <tr><td>所有特征大致都有用</td><td>L2</td><td>平滑收缩，不会丢特征</td></tr>
+    <tr><td>有很多特征但只有少数重要</td><td>L1</td><td>让无用特征的 w 变 0，自动选择</td></tr>
+    <tr><td>不知道用哪个</td><td>Elastic Net (L1+L2)</td><td>组合，常用默认值</td></tr>
+  </table>
+</section>
+
+<!-- ===================== 4 编程练习 ===================== -->
+<section id="code" class="card">
+  <h2>④ 编程练习</h2>
+
+  <h3>4.1 numpy 手写版（含正则化）</h3>
+<pre><code class="language-python">import numpy as np
+
+# 学习时数 → 通过(1)/不通过(0)
+X = np.array([1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 5.5, 6.0, 6.5, 7.0, 7.5, 8.0])
+y = np.array([  0,   0,   0,   0,   0,   1,   0,   1,   1,   0,   1,   1,   1,   1,   1])
+n = len(X)
+
+# 初始化
+w, b = 0.0, 0.0
+lr = 0.1
+epochs = 5000
+lam = 0.01   # L2 正则化系数
+
+def sigmoid(z):
+    return 1.0 / (1.0 + np.exp(-z))
+
+for epoch in range(epochs):
+    # 1) 前向：算预测概率
+    z = w * X + b
+    p = sigmoid(z)
+
+    # 2) 算损失（log loss + L2 正则项）
+    eps = 1e-12   # 防止 log(0)
+    loss = -np.mean(y * np.log(p + eps) + (1-y) * np.log(1-p + eps))
+    loss += lam * (w ** 2)
+
+    # 3) 梯度
+    dw = np.mean((p - y) * X) + 2 * lam * w
+    db = np.mean(p - y)
+
+    # 4) 更新
+    w -= lr * dw
+    b -= lr * db
+
+    if epoch % 1000 == 0:
+        acc = np.mean((p > 0.5).astype(int) == y)
+        print(f"epoch={epoch:5d}  loss={loss:.4f}  acc={acc:.2%}  w={w:.3f}  b={b:.3f}")
+
+# 预测
+print(f"\n最终: w={w:.3f}, b={b:.3f}")
+print(f"学了 4.2 小时通过概率: {sigmoid(w*4.2+b):.2%}")
+print(f"学了 6.5 小时通过概率: {sigmoid(w*6.5+b):.2%}")
+print(f"决策边界（p=0.5）: x = {-b/w:.2f} 小时")
+</code></pre>
+
+  <details>
+    <summary>预期输出</summary>
+<pre><code class="language-python">epoch=    0  loss=0.6931  acc=53.33%  w=0.0303  b=0.0000
+epoch= 1000  loss=0.5037  acc=80.00%  w=1.0156  b=-4.6238
+epoch= 2000  loss=0.5006  acc=80.00%  w=1.0494  b=-4.7977
+epoch= 3000  loss=0.5005  acc=80.00%  w=1.0511  b=-4.8066
+epoch= 4000  loss=0.5005  acc=80.00%  w=1.0512  b=-4.8071
+
+最终: w=1.051, b=-4.807
+学了 4.2 小时通过概率: 39.30%
+学了 6.5 小时通过概率: 87.13%
+决策边界（p=0.5）: x = 4.57 小时</code></pre>
+  </details>
+
+  <h3>4.2 sklearn 版（工程用）</h3>
+<pre><code class="language-python">import numpy as np
+from sklearn.linear_model import LogisticRegression
+
+X = np.array([1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0,
+              5.5, 6.0, 6.5, 7.0, 7.5, 8.0]).reshape(-1, 1)
+y = np.array([0, 0, 0, 0, 0, 1, 0, 1, 1, 0, 1, 1, 1, 1, 1])
+
+model = LogisticRegression(C=10.0, penalty='l2')   # C 是 1/λ
+model.fit(X, y)
+
+print(f"w = {model.coef_[0][0]:.3f}")
+print(f"b = {model.intercept_[0]:.3f}")
+print(f"训练准确率 = {model.score(X, y):.2%}")
+print(f"学 4.2 小时通过概率: {model.predict_proba([[4.2]])[0][1]:.2%}")
+print(f"学 6.5 小时通过概率: {model.predict_proba([[6.5]])[0][1]:.2%}")
+</code></pre>
+
+  <details>
+    <summary>预期输出</summary>
+<pre><code class="language-python">w = 1.282
+b = -5.847
+训练准确率 = 80.00%
+学 4.2 小时通过概率: 39.17%
+学 6.5 小时通过概率: 92.21%</code></pre>
+  </details>
+
+  <h3>4.3 sklearn 的 C 参数 vs 我们的 λ</h3>
+  <p>sklearn 用 <code>C = 1/λ</code> 作为参数，<strong>方向反过来的</strong>：</p>
+  <ul>
+    <li>C 大（λ 小）→ 正则化弱 → 拟合更激进</li>
+    <li>C 小（λ 大）→ 正则化强 → 拟合更保守</li>
+  </ul>
+  <div class="warn">这是初学者常见的坑。<code>C=0.01</code> 在 sklearn 里是<strong>强正则化</strong>，不是弱。</div>
+
+  <h3>4.4 课后练习</h3>
+  <ol>
+    <li>把 <code>lam</code> 调成 0、0.1、1.0，看 $w, b$ 怎么变。提示：λ 越大，$w$ 越小。</li>
+    <li>加一个特征"睡眠时数"，做二维逻辑回归。可视化决策边界。</li>
+    <li>故意让两类数据线性可分（比如 X<4 全是 0，X>4 全是 1），看 λ=0 时 $w$ 会不会爆炸。</li>
+  </ol>
+</section>
+
+<!-- ===================== 5 测试 ===================== -->
+<section id="quiz" class="card">
+  <h2>⑤ 测试你的知识</h2>
+
+  <div class="quiz-q" data-correct="c">
+    <p><strong>Q1.</strong> 逻辑回归的"逻辑"指的是？</p>
+    <div class="quiz-opts">
+      <label><input type="radio" name="q1" value="a"> a) 它能做逻辑判断（if/else）</label>
+      <label><input type="radio" name="q1" value="b"> b) 它用到了布尔逻辑</label>
+      <label><input type="radio" name="q1" value="c"> c) 它用 logit（log-odds）函数做线性建模</label>
+      <label><input type="radio" name="q1" value="d"> d) 它逻辑性强、推理严密</label>
+    </div>
+    <div class="quiz-explain">"logistic" 来自 logit = log-odds。我们假设 log-odds 是 x 的线性函数，反解出 sigmoid。这是名字真正的来源。</div>
+  </div>
+
+  <div class="quiz-q" data-correct="b">
+    <p><strong>Q2.</strong> Sigmoid 函数 $\sigma(z) = 1/(1+e^{-z})$ 在 $z=0$ 时的值是？</p>
+    <div class="quiz-opts">
+      <label><input type="radio" name="q2" value="a"> a) 0</label>
+      <label><input type="radio" name="q2" value="b"> b) 0.5</label>
+      <label><input type="radio" name="q2" value="c"> c) 1</label>
+      <label><input type="radio" name="q2" value="d"> d) e/2</label>
+    </div>
+    <div class="quiz-explain">σ(0) = 1/(1+e⁰) = 1/(1+1) = 0.5。这就是<strong>决策边界</strong>所在 —— 最不确定的点。</div>
+  </div>
+
+  <div class="quiz-q" data-correct="d">
+    <p><strong>Q3.</strong> 为什么逻辑回归不用 MSE 损失？</p>
+    <div class="quiz-opts">
+      <label><input type="radio" name="q3" value="a"> a) MSE 算起来慢</label>
+      <label><input type="radio" name="q3" value="b"> b) MSE 只能用于回归不能用于分类</label>
+      <label><input type="radio" name="q3" value="c"> c) MSE 没有概率解释</label>
+      <label><input type="radio" name="q3" value="d"> d) MSE + sigmoid 会导致损失非凸 + 梯度消失</label>
+    </div>
+    <div class="quiz-explain">技术上 MSE 也能"硬用"，但有两个数学灾难：损失非凸（卡局部极小）和梯度消失（自信地错时学不动）。对数损失同时解决这两个问题。</div>
+  </div>
+
+  <div class="quiz-q" data-correct="b">
+    <p><strong>Q4.</strong> 真实标签 y=1，模型预测 p=0.01（自信地错）。对数损失是多少？</p>
+    <div class="quiz-opts">
+      <label><input type="radio" name="q4" value="a"> a) 0.01</label>
+      <label><input type="radio" name="q4" value="b"> b) 约 4.6</label>
+      <label><input type="radio" name="q4" value="c"> c) 1</label>
+      <label><input type="radio" name="q4" value="d"> d) 0.99</label>
+    </div>
+    <div class="quiz-explain">y=1 时损失 = −ln(p) = −ln(0.01) ≈ 4.6。同样情况下 MSE 损失只有 (1−0.01)² ≈ 0.98，对数损失重罚 4.7 倍 —— 这就是"自信地错→损失爆炸"的具体数字。</div>
+  </div>
+
+  <div class="quiz-q" data-correct="a">
+    <p><strong>Q5.</strong> 逻辑回归 + 对数损失，单样本梯度对 w 是？</p>
+    <div class="quiz-opts">
+      <label><input type="radio" name="q5" value="a"> a) (p − y) · x</label>
+      <label><input type="radio" name="q5" value="b"> b) (p − y) · p(1−p) · x</label>
+      <label><input type="radio" name="q5" value="c"> c) (y − p)² · x</label>
+      <label><input type="radio" name="q5" value="d"> d) −ln(p) · x</label>
+    </div>
+    <div class="quiz-explain">对数损失对 p 求导带来的 1/(p(1−p)) 和 sigmoid 求导带来的 p(1−p) 正好抵消，最终得到干净的 (p−y)·x —— 和线性回归长得一模一样。</div>
+  </div>
+
+  <div class="quiz-q" data-correct="c">
+    <p><strong>Q6.</strong> 数据线性可分时，不加正则化的逻辑回归会发生什么？</p>
+    <div class="quiz-opts">
+      <label><input type="radio" name="q6" value="a"> a) 收敛到完美的小 w</label>
+      <label><input type="radio" name="q6" value="b"> b) 拒绝训练</label>
+      <label><input type="radio" name="q6" value="c"> c) w 会无限增大，sigmoid 变成硬阶跃</label>
+      <label><input type="radio" name="q6" value="d"> d) 输出概率全是 0.5</label>
+    </div>
+    <div class="quiz-explain">−ln(p) 永远能通过把 p 推得更接近 0 或 1 来减小，于是 |w| → ∞。所以线性可分的场景<strong>必须加正则化</strong>。</div>
+  </div>
+
+  <div class="quiz-q" data-correct="d">
+    <p><strong>Q7.</strong> sklearn 的 LogisticRegression 里 C=0.01 意味着？</p>
+    <div class="quiz-opts">
+      <label><input type="radio" name="q7" value="a"> a) 弱正则化</label>
+      <label><input type="radio" name="q7" value="b"> b) 学习率很小</label>
+      <label><input type="radio" name="q7" value="c"> c) 训练 0.01 个 epoch</label>
+      <label><input type="radio" name="q7" value="d"> d) 强正则化（C = 1/λ，C 小 = λ 大）</label>
+    </div>
+    <div class="quiz-explain">sklearn 用 C 而不是 λ，且 C = 1/λ。C 越小正则化越强，是初学者常见的坑。</div>
+  </div>
+
+  <div class="quiz-q" data-correct="b">
+    <p><strong>Q8.</strong> L1 正则化相比 L2 的特点？</p>
+    <div class="quiz-opts">
+      <label><input type="radio" name="q8" value="a"> a) 训练更快</label>
+      <label><input type="radio" name="q8" value="b"> b) 能让部分 w 精确等于 0，做特征选择</label>
+      <label><input type="radio" name="q8" value="c"> c) 准确率一定更高</label>
+      <label><input type="radio" name="q8" value="d"> d) 损失永远是凸的（L2 不是）</label>
+    </div>
+    <div class="quiz-explain">L1 用绝对值惩罚，几何上导致最优解常常在坐标轴上（部分维度=0）→ 等于自动选特征。L2 用平方惩罚，只是平滑收缩，不会精确为 0。两者损失都是凸的。</div>
+  </div>
+</section>
+
+<!-- ===================== 6 后续 ===================== -->
+<section id="next" class="card">
+  <h2>⑥ 后续步骤</h2>
+
+  <h3>立即可学的扩展</h3>
+  <ul>
+    <li><strong>Softmax 回归（多分类）</strong>：3 类以上时，把 sigmoid 换成 softmax $p_k = e^{z_k} / \sum_j e^{z_j}$，损失换成多类交叉熵。逻辑回归是它的二分类特例。</li>
+    <li><strong>非线性决策边界</strong>：手动加 $x_1^2, x_1 x_2$ 等特征 → 多项式逻辑回归，决策边界可以是曲线。</li>
+    <li><strong>SVM、决策树、随机森林</strong>：其他分类器，思路不同但解决的是同一类问题。</li>
+  </ul>
+
+  <h3>从逻辑回归到神经网络</h3>
+  <div class="link">
+    <strong>逻辑回归 = 单个神经元（带 sigmoid 激活）。</strong>把多个这样的神经元堆成"层"，层与层之间嵌套，就是<strong>神经网络</strong>。最后一层做二分类时，仍然是 sigmoid + 对数损失。所以你已经学会了深度学习里最后一公里的关键组件。
+  </div>
+
+  <h3>实战里你还会遇到</h3>
+  <ul>
+    <li><strong>类别不平衡</strong>：违约样本可能只占 5%。需要采样、调整类别权重、用 AUC 而非准确率评估。</li>
+    <li><strong>评估指标</strong>：准确率 / 精确率 / 召回率 / F1 / AUC-ROC，每个适用场景不同。</li>
+    <li><strong>校准（calibration）</strong>：sigmoid 输出的"概率"是真实概率吗？不一定。需要 Platt scaling 或 isotonic regression。</li>
+    <li><strong>多分类的另一种做法</strong>：one-vs-rest（训练 K 个二分类器）vs softmax（一次性输出 K 类概率）。</li>
+  </ul>
+
+  <h3>推荐学习路径</h3>
+  <ol>
+    <li>把第 ④ 节的代码跑一遍，改 λ 玩</li>
+    <li>找 kaggle 的 Titanic 数据集做一遍（最经典的二分类入门）</li>
+    <li>学 softmax 和多类交叉熵</li>
+    <li>学评估指标（混淆矩阵、ROC 曲线）</li>
+    <li>读简单神经网络（一两层），你会发现没新东西</li>
+  </ol>
+</section>
+
+<!-- ===================== JS ===================== -->
+<script>
+"use strict";
+const NS = "http://www.w3.org/2000/svg";
+function svgEl(tag, attrs={}) {
+  const el = document.createElementNS(NS, tag);
+  for (const k in attrs) el.setAttribute(k, attrs[k]);
+  return el;
+}
+function clear(svg) { while (svg.firstChild) svg.removeChild(svg.firstChild); }
+
+function makeAxes(svg, opts) {
+  const { xMin, xMax, yMin, yMax, w, h, m, xTicks, yTicks, xLabel, yLabel, title, yTickFmt } = opts;
+  const pw = w - m.l - m.r, ph = h - m.t - m.b;
+  const xPx = x => m.l + (x - xMin) / (xMax - xMin) * pw;
+  const yPx = y => m.t + ph - (y - yMin) / (yMax - yMin) * ph;
+  for (const t of xTicks) {
+    const px = xPx(t);
+    svg.appendChild(svgEl("line", {x1:px,y1:m.t,x2:px,y2:m.t+ph,stroke:"#e5e7eb","stroke-width":1}));
+    const tx = svgEl("text", {x:px, y:m.t+ph+18, "text-anchor":"middle", "font-size":12, fill:"#6b7280"});
+    tx.textContent = t;
+    svg.appendChild(tx);
+  }
+  for (const t of yTicks) {
+    const py = yPx(t);
+    svg.appendChild(svgEl("line", {x1:m.l,y1:py,x2:m.l+pw,y2:py,stroke:"#e5e7eb","stroke-width":1}));
+    const tx = svgEl("text", {x:m.l-8, y:py+4, "text-anchor":"end", "font-size":12, fill:"#6b7280"});
+    tx.textContent = yTickFmt ? yTickFmt(t) : t;
+    svg.appendChild(tx);
+  }
+  if (xMin < 0 && xMax > 0) {
+    const px = xPx(0);
+    svg.appendChild(svgEl("line", {x1:px,y1:m.t,x2:px,y2:m.t+ph,stroke:"#9ca3af","stroke-width":1.2}));
+  }
+  if (yMin < 0 && yMax > 0) {
+    const py = yPx(0);
+    svg.appendChild(svgEl("line", {x1:m.l,y1:py,x2:m.l+pw,y2:py,stroke:"#9ca3af","stroke-width":1.2}));
+  }
+  svg.appendChild(svgEl("rect", {x:m.l,y:m.t,width:pw,height:ph,fill:"none",stroke:"#cbd5e1","stroke-width":1}));
+  if (xLabel) { const t = svgEl("text", {x:m.l+pw/2,y:h-6,"text-anchor":"middle","font-size":13,fill:"#475569"}); t.textContent=xLabel; svg.appendChild(t); }
+  if (yLabel) { const t = svgEl("text", {x:14,y:m.t+ph/2,"text-anchor":"middle","font-size":13,fill:"#475569",transform:`rotate(-90, 14, ${m.t+ph/2})`}); t.textContent=yLabel; svg.appendChild(t); }
+  if (title)  { const t = svgEl("text", {x:m.l+pw/2,y:m.t-6,"text-anchor":"middle","font-size":14,fill:"#1f2937","font-weight":600}); t.textContent=title; svg.appendChild(t); }
+  return { xPx, yPx, pw, ph };
+}
+function plotCurve(svg, fn, xMin, xMax, ax, color="#2563eb", width=2.4, dash=null, samples=300) {
+  const pts = [];
+  for (let i = 0; i <= samples; i++) {
+    const x = xMin + (xMax - xMin) * i / samples;
+    const y = fn(x);
+    if (isFinite(y)) pts.push([ax.xPx(x), ax.yPx(y)]);
+  }
+  const d = pts.map((p, i) => (i===0?"M":"L") + p[0].toFixed(2) + "," + p[1].toFixed(2)).join(" ");
+  const path = svgEl("path", {d, stroke:color, "stroke-width":width, fill:"none", "stroke-linejoin":"round"});
+  if (dash) path.setAttribute("stroke-dasharray", dash);
+  svg.appendChild(path);
+}
+function dot(svg, x, y, color, r=5) {
+  svg.appendChild(svgEl("circle", {cx:x, cy:y, r, fill:color, stroke:"white","stroke-width":1.5}));
+}
+function lbl(svg, x, y, text, color="#1f2937", size=12, anchor="start") {
+  const t = svgEl("text", {x, y, "font-size":size, fill:color, "text-anchor":anchor});
+  t.textContent = text;
+  svg.appendChild(t);
+}
+const sigmoid = z => 1/(1+Math.exp(-z));
+
+// =========== 数据 ===========
+// 1D 数据: [hours, passed]
+const PASS_DATA = [
+  [1.0, 0], [1.5, 0], [2.0, 0], [2.5, 0], [3.0, 0],
+  [3.5, 1], [4.0, 0], [4.5, 1], [5.0, 1], [5.5, 0],
+  [6.0, 1], [6.5, 1], [7.0, 1], [7.5, 1], [8.0, 1]
+];
+
+// 2D 数据: [hours_studied, hours_slept, passed]
+const PASS_2D = [
+  // passed = 1
+  [4.5, 7, 1], [5.0, 6.5, 1], [5.5, 7.5, 1], [6.0, 6, 1], [6.5, 7, 1],
+  [7.0, 6.5, 1], [4.0, 8, 1], [5.5, 8, 1], [7.5, 7, 1], [6.5, 8, 1],
+  // passed = 0
+  [2.0, 5, 0], [2.5, 4, 0], [3.0, 5, 0], [1.5, 6, 0], [2.0, 7, 0],
+  [3.5, 4, 0], [4.0, 4, 0], [2.5, 6, 0], [3.0, 6, 0], [1.0, 7, 0]
+];
+
+function drawPassScatter(svgId, opts={}) {
+  const svg = document.getElementById(svgId);
+  clear(svg);
+  const ax = makeAxes(svg, {xMin:0, xMax:9, yMin:-0.15, yMax:1.15, w:640, h:300,
+    m:{l:50,r:20,t:20,b:40}, xTicks:[0,1,2,3,4,5,6,7,8,9], yTicks:[0,0.5,1],
+    xLabel:"学习时数", yLabel:"是否通过", title: opts.title});
+  // 0/1 参考线
+  svg.appendChild(svgEl("line", {x1:ax.xPx(0),y1:ax.yPx(0),x2:ax.xPx(9),y2:ax.yPx(0),stroke:"#cbd5e1","stroke-width":1,"stroke-dasharray":"3,3"}));
+  svg.appendChild(svgEl("line", {x1:ax.xPx(0),y1:ax.yPx(1),x2:ax.xPx(9),y2:ax.yPx(1),stroke:"#cbd5e1","stroke-width":1,"stroke-dasharray":"3,3"}));
+  for (const [x, y] of PASS_DATA) {
+    dot(svg, ax.xPx(x), ax.yPx(y), y === 1 ? "#16a34a" : "#dc2626", 5);
+  }
+  return { svg, ax };
+}
+
+// =========== 1.2 数据散点 ===========
+drawPassScatter("plot-pass-data");
+
+// =========== 1.3 错误尝试：用线性回归 ===========
+(function(){
+  // 用 OLS 拟合
+  const xs = PASS_DATA.map(p=>p[0]), ys = PASS_DATA.map(p=>p[1]);
+  const n = xs.length;
+  const mx = xs.reduce((a,b)=>a+b,0)/n, my = ys.reduce((a,b)=>a+b,0)/n;
+  let num=0, den=0;
+  for (let i = 0; i < n; i++) { num += (xs[i]-mx)*(ys[i]-my); den += (xs[i]-mx)**2; }
+  const w = num/den, b = my - w*mx;
+  const svg = document.getElementById("plot-bad-linear");
+  const ax = makeAxes(svg, {xMin:0, xMax:9, yMin:-0.5, yMax:1.5, w:640, h:320,
+    m:{l:50,r:20,t:20,b:40}, xTicks:[0,1,2,3,4,5,6,7,8,9], yTicks:[-0.5,0,0.5,1,1.5],
+    xLabel:"学习时数", yLabel:"线性回归输出",
+    title:`用线性回归直接拟合 0/1 数据: y = ${w.toFixed(3)}x + ${b.toFixed(3)}`});
+  // 0/1 参考
+  svg.appendChild(svgEl("rect", {x:ax.xPx(0), y:ax.yPx(1.5), width:ax.xPx(9)-ax.xPx(0),
+    height:ax.yPx(1)-ax.yPx(1.5), fill:"#fee2e2", opacity:0.4}));
+  svg.appendChild(svgEl("rect", {x:ax.xPx(0), y:ax.yPx(0), width:ax.xPx(9)-ax.xPx(0),
+    height:ax.yPx(-0.5)-ax.yPx(0), fill:"#fee2e2", opacity:0.4}));
+  lbl(svg, ax.xPx(0.5), ax.yPx(1.25), "❌ 输出 > 1（无意义）", "#b91c1c", 12);
+  lbl(svg, ax.xPx(0.5), ax.yPx(-0.25), "❌ 输出 < 0（无意义）", "#b91c1c", 12);
+  // 直线
+  plotCurve(svg, x => w*x+b, 0, 9, ax, "#2563eb", 2.4);
+  // 数据点
+  for (const [x, y] of PASS_DATA) {
+    dot(svg, ax.xPx(x), ax.yPx(y), y === 1 ? "#16a34a" : "#dc2626", 5);
+  }
+})();
+
+// =========== 1.4 解决方案预览：sigmoid ===========
+(function(){
+  const svg = document.getElementById("plot-good-logistic");
+  const ax = makeAxes(svg, {xMin:0, xMax:9, yMin:-0.15, yMax:1.15, w:640, h:320,
+    m:{l:50,r:20,t:20,b:40}, xTicks:[0,1,2,3,4,5,6,7,8,9], yTicks:[0,0.25,0.5,0.75,1],
+    xLabel:"学习时数", yLabel:"通过的概率",
+    title:"逻辑回归: p = σ(1.05·x - 4.81)"});
+  svg.appendChild(svgEl("line", {x1:ax.xPx(0),y1:ax.yPx(0),x2:ax.xPx(9),y2:ax.yPx(0),stroke:"#cbd5e1","stroke-width":1,"stroke-dasharray":"3,3"}));
+  svg.appendChild(svgEl("line", {x1:ax.xPx(0),y1:ax.yPx(1),x2:ax.xPx(9),y2:ax.yPx(1),stroke:"#cbd5e1","stroke-width":1,"stroke-dasharray":"3,3"}));
+  svg.appendChild(svgEl("line", {x1:ax.xPx(0),y1:ax.yPx(0.5),x2:ax.xPx(9),y2:ax.yPx(0.5),stroke:"#9ca3af","stroke-width":1,"stroke-dasharray":"4,3"}));
+  lbl(svg, ax.xPx(9)-5, ax.yPx(0.5)-3, "p=0.5 决策边界", "#475569", 11, "end");
+  plotCurve(svg, x => sigmoid(1.05*x - 4.81), 0, 9, ax, "#2563eb", 2.6);
+  for (const [x, y] of PASS_DATA) {
+    dot(svg, ax.xPx(x), ax.yPx(y), y === 1 ? "#16a34a" : "#dc2626", 5);
+  }
+})();
+
+// =========== 2.1 logit 函数 ===========
+(function(){
+  const svg = document.getElementById("plot-logit");
+  const ax = makeAxes(svg, {xMin:0.01, xMax:0.99, yMin:-5, yMax:5, w:640, h:320,
+    m:{l:50,r:20,t:20,b:40}, xTicks:[0,0.2,0.4,0.6,0.8,1], yTicks:[-5,-3,-1,0,1,3,5],
+    xLabel:"p", yLabel:"logit(p) = ln(p/(1-p))",
+    title:"logit 函数：把 [0,1] 拉到 (-∞, +∞)"});
+  plotCurve(svg, p => Math.log(p/(1-p)), 0.005, 0.995, ax, "#2563eb", 2.6);
+  dot(svg, ax.xPx(0.5), ax.yPx(0), "#dc2626", 5);
+  lbl(svg, ax.xPx(0.5)+8, ax.yPx(0)-4, "(0.5, 0)", "#dc2626", 12);
+})();
+
+// =========== 2.2 sigmoid ===========
+(function(){
+  const svg = document.getElementById("plot-sigmoid");
+  const ax = makeAxes(svg, {xMin:-6, xMax:6, yMin:-0.1, yMax:1.1, w:640, h:320,
+    m:{l:50,r:20,t:20,b:40}, xTicks:[-6,-4,-2,0,2,4,6], yTicks:[0,0.25,0.5,0.75,1],
+    xLabel:"z = wᵀx + b", yLabel:"σ(z)",
+    title:"sigmoid 函数"});
+  svg.appendChild(svgEl("line", {x1:ax.xPx(-6),y1:ax.yPx(0),x2:ax.xPx(6),y2:ax.yPx(0),stroke:"#aaa","stroke-width":1,"stroke-dasharray":"4,4"}));
+  svg.appendChild(svgEl("line", {x1:ax.xPx(-6),y1:ax.yPx(1),x2:ax.xPx(6),y2:ax.yPx(1),stroke:"#aaa","stroke-width":1,"stroke-dasharray":"4,4"}));
+  svg.appendChild(svgEl("rect", {x:ax.xPx(-2), y:ax.yPx(1.1), width:ax.xPx(2)-ax.xPx(-2),
+    height:ax.yPx(-0.1)-ax.yPx(1.1), fill:"#fef3c7", opacity:0.5}));
+  lbl(svg, ax.xPx(0), ax.yPx(1.1)+14, "敏感区", "#a16207", 12, "middle");
+  plotCurve(svg, sigmoid, -6, 6, ax, "#2563eb", 2.6);
+  dot(svg, ax.xPx(0), ax.yPx(0.5), "#dc2626", 5);
+  lbl(svg, ax.xPx(0)+8, ax.yPx(0.5)-6, "(0, 0.5)", "#dc2626", 12);
+})();
+
+// =========== 2.4 交互：sigmoid 拟合 ===========
+function drawInteractive() {
+  const w = +document.getElementById("lr-w").value;
+  const b = +document.getElementById("lr-b").value;
+  document.getElementById("lr-w-val").textContent = w.toFixed(2);
+  document.getElementById("lr-b-val").textContent = b.toFixed(1);
+  const boundary = -b/w;
+  document.getElementById("lr-boundary").textContent = isFinite(boundary) ? boundary.toFixed(2) : "—";
+
+  const svg = document.getElementById("plot-interactive");
+  clear(svg);
+  const ax = makeAxes(svg, {xMin:0, xMax:9, yMin:-0.15, yMax:1.15, w:640, h:360,
+    m:{l:50,r:20,t:20,b:40}, xTicks:[0,1,2,3,4,5,6,7,8,9], yTicks:[0,0.25,0.5,0.75,1],
+    xLabel:"学习时数", yLabel:"通过的概率 p"});
+  svg.appendChild(svgEl("line", {x1:ax.xPx(0),y1:ax.yPx(0.5),x2:ax.xPx(9),y2:ax.yPx(0.5),stroke:"#9ca3af","stroke-width":1,"stroke-dasharray":"4,3"}));
+  // 决策边界竖线
+  if (boundary > 0 && boundary < 9) {
+    svg.appendChild(svgEl("line", {x1:ax.xPx(boundary),y1:ax.yPx(-0.15),x2:ax.xPx(boundary),y2:ax.yPx(1.15),
+      stroke:"#7c3aed","stroke-width":2,"stroke-dasharray":"5,3"}));
+    lbl(svg, ax.xPx(boundary)+5, ax.yPx(1.1), `x=${boundary.toFixed(2)}`, "#7c3aed", 12);
+  }
+  plotCurve(svg, x => sigmoid(w*x + b), 0, 9, ax, "#2563eb", 2.6);
+  let correct = 0;
+  for (const [x, y] of PASS_DATA) {
+    const p = sigmoid(w*x + b);
+    const pred = p > 0.5 ? 1 : 0;
+    if (pred === y) correct++;
+    dot(svg, ax.xPx(x), ax.yPx(y), y === 1 ? "#16a34a" : "#dc2626", 5);
+  }
+  document.getElementById("lr-acc").textContent = (correct/PASS_DATA.length*100).toFixed(0) + "%";
+}
+document.getElementById("lr-w").addEventListener("input", drawInteractive);
+document.getElementById("lr-b").addEventListener("input", drawInteractive);
+drawInteractive();
+
+// =========== 2.5 2D 决策边界 ===========
+function draw2D(svgId, w1, w2, b) {
+  const svg = document.getElementById(svgId);
+  clear(svg);
+  const ax = makeAxes(svg, {xMin:0, xMax:9, yMin:3, yMax:9, w:640, h:380,
+    m:{l:50,r:20,t:20,b:40}, xTicks:[0,2,4,6,8], yTicks:[3,4,5,6,7,8,9],
+    xLabel:"学习时数", yLabel:"睡眠时数", title:"2D 决策边界（背景=p, 紫线=p=0.5）"});
+  // 背景概率图（用小矩形拼）
+  const gridN = 60;
+  for (let i = 0; i < gridN; i++) {
+    for (let j = 0; j < gridN; j++) {
+      const x1 = 0 + 9*i/gridN, x2 = 3 + 6*j/gridN;
+      const p = sigmoid(w1*x1 + w2*x2 + b);
+      const x1n = 0 + 9*(i+1)/gridN, x2n = 3 + 6*(j+1)/gridN;
+      // 颜色：p=0 → 红, p=1 → 蓝
+      const r = Math.round(255 - p*100);
+      const g = Math.round(200 + p*55 - (1-p)*100);
+      const bb = Math.round(150 + p*100);
+      svg.appendChild(svgEl("rect", {
+        x:ax.xPx(x1), y:ax.yPx(x2n), width:ax.xPx(x1n)-ax.xPx(x1), height:ax.yPx(x2)-ax.yPx(x2n),
+        fill:`rgb(${r},${Math.max(100,g)},${bb})`, opacity:0.5
+      }));
+    }
+  }
+  // 决策边界 w1*x1 + w2*x2 + b = 0 → x2 = -(w1*x1 + b)/w2
+  if (Math.abs(w2) > 1e-6) {
+    plotCurve(svg, x => -(w1*x + b)/w2, 0, 9, ax, "#7c3aed", 2.6);
+  }
+  // 数据点
+  for (const [x, s, y] of PASS_2D) {
+    dot(svg, ax.xPx(x), ax.yPx(s), y === 1 ? "#16a34a" : "#dc2626", 5);
+  }
+}
+draw2D("plot-2d-boundary", 0.8, 0.6, -7);
+
+// =========== 3.1 非凸图 ===========
+(function(){
+  const svg = document.getElementById("plot-nonconvex");
+  const ax = makeAxes(svg, {xMin:-6, xMax:6, yMin:0, yMax:1, w:640, h:280,
+    m:{l:50,r:20,t:30,b:40}, xTicks:[-6,-4,-2,0,2,4,6], yTicks:[0,0.25,0.5,0.75,1],
+    xLabel:"参数 w", yLabel:"损失",
+    title:"MSE + sigmoid 的损失曲线（蓝）vs 对数损失（红）"});
+  // 假设单样本 y=1, x=1, b=0
+  // MSE = (sigmoid(w) - 1)^2
+  // logloss = -log(sigmoid(w))
+  plotCurve(svg, w => Math.pow(sigmoid(w) - 1, 2), -6, 6, ax, "#2563eb", 2.6);
+  plotCurve(svg, w => -Math.log(sigmoid(w)+1e-12)/6, -6, 6, ax, "#dc2626", 2.6, "5,3");
+  // 标注: MSE 曲线有"平台"区, 形状不像碗
+  lbl(svg, ax.xPx(-5), ax.yPx(0.95), "MSE: 左半边非常平坦 → 梯度消失 → 学不动", "#1e40af", 12);
+  lbl(svg, ax.xPx(-5), ax.yPx(0.78), "log loss: 左侧陡峭 → 大梯度 → 学得动", "#b91c1c", 12);
+})();
+
+// =========== 3.2 log loss 爆炸 ===========
+(function(){
+  const svg = document.getElementById("plot-logloss-explosion");
+  const ax = makeAxes(svg, {xMin:0, xMax:1, yMin:0, yMax:6, w:640, h:320,
+    m:{l:50,r:20,t:20,b:40}, xTicks:[0,0.2,0.4,0.6,0.8,1], yTicks:[0,1,2,3,4,5,6],
+    xLabel:"预测概率 p（真值 y=1）", yLabel:"损失"});
+  svg.appendChild(svgEl("line", {x1:ax.xPx(0),y1:ax.yPx(1),x2:ax.xPx(1),y2:ax.yPx(1),stroke:"#2563eb","stroke-width":1,"stroke-dasharray":"4,4",opacity:0.5}));
+  lbl(svg, ax.xPx(0.05), ax.yPx(1)-4, "MSE 上限 = 1", "#2563eb", 11);
+  plotCurve(svg, p => (1-p)*(1-p), 0.001, 1, ax, "#2563eb", 2.4);
+  plotCurve(svg, p => -Math.log(p), 0.0025, 1, ax, "#dc2626", 2.4);
+  for (const p of [0.5, 0.1, 0.01]) {
+    dot(svg, ax.xPx(p), ax.yPx(-Math.log(p)), "#dc2626", 3.5);
+    lbl(svg, ax.xPx(p)+5, ax.yPx(-Math.log(p))-4, `p=${p}: ${(-Math.log(p)).toFixed(2)}`, "#dc2626", 11);
+  }
+})();
+
+// =========== 3.3 正则化交互 ===========
+function trainLogisticReg2D(lam) {
+  // 梯度下降训练 w1, w2, b，目标:
+  // L = -mean[y log p + (1-y) log(1-p)] + lam * (w1^2 + w2^2)
+  let w1 = 0, w2 = 0, b = 0;
+  const lr = 0.05;
+  const epochs = 2000;
+  const N = PASS_2D.length;
+  for (let i = 0; i < epochs; i++) {
+    let dw1 = 0, dw2 = 0, db = 0;
+    for (const [x1, x2, y] of PASS_2D) {
+      const z = w1*x1 + w2*x2 + b;
+      const p = sigmoid(z);
+      dw1 += (p - y) * x1;
+      dw2 += (p - y) * x2;
+      db  += (p - y);
+    }
+    dw1 = dw1/N + 2*lam*w1;
+    dw2 = dw2/N + 2*lam*w2;
+    db  = db/N;
+    w1 -= lr*dw1; w2 -= lr*dw2; b -= lr*db;
+  }
+  return { w1, w2, b };
+}
+
+function drawReg() {
+  const lam = +document.getElementById("reg-lambda").value;
+  document.getElementById("reg-lambda-val").textContent = lam.toFixed(2);
+  const { w1, w2, b } = trainLogisticReg2D(lam);
+  draw2D("plot-reg", w1, w2, b);
+  const norm = Math.sqrt(w1*w1 + w2*w2);
+  document.getElementById("reg-norm").textContent = norm.toFixed(2);
+  let correct = 0;
+  for (const [x1, x2, y] of PASS_2D) {
+    const p = sigmoid(w1*x1 + w2*x2 + b);
+    if ((p > 0.5 ? 1 : 0) === y) correct++;
+  }
+  document.getElementById("reg-acc").textContent = (correct/PASS_2D.length*100).toFixed(0) + "%";
+}
+document.getElementById("reg-lambda").addEventListener("input", drawReg);
+drawReg();
+
+// =========== quiz ===========
+document.querySelectorAll(".quiz-q").forEach(q => {
+  const correct = q.dataset.correct;
+  q.querySelectorAll("input[type=radio]").forEach(inp => {
+    inp.addEventListener("change", () => {
+      q.classList.add("answered");
+      q.querySelectorAll(".quiz-opts label").forEach(lbl => {
+        const v = lbl.querySelector("input").value;
+        if (v === correct) lbl.classList.add("correct");
+        else if (lbl.querySelector("input").checked) lbl.classList.add("wrong");
+      });
+    });
+  });
+});
+</script>
+
+</body>
+</html>

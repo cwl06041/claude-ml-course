@@ -1,0 +1,19 @@
+# 环境变量 / 秘密
+.env
+.env.local
+.env.*.local
+
+# 与课程无关的本地脚本
+src/
+test_claude.py
+test_no_headers.py
+
+# Claude Code 本地配置（仅本人有用）
+.claude/settings.local.json
+
+# Python
+__pycache__/
+*.pyc
+
+# 系统
+.DS_Store
