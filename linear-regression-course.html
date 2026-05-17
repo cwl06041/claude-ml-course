@@ -8,7 +8,20 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <link rel="manifest" href="manifest.json" />
 <link rel="apple-touch-icon" href="icons/icon-192.png" />
-<script>if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));}</script>
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(()=>{}));
+}
+(function () {
+  function check() {
+    document.querySelectorAll('.katex-display').forEach(el => {
+      el.classList.toggle('is-scrollable', el.scrollWidth > el.clientWidth + 2);
+    });
+  }
+  window.addEventListener('load', () => { setTimeout(check, 200); setTimeout(check, 1500); });
+  window.addEventListener('resize', check);
+})();
+</script>
 <title>线性回归 · 从场景到代码</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism.min.css">
@@ -52,6 +65,12 @@
   .katex-display { overflow-x: auto; overflow-y: hidden;
                    max-width: 100%; padding: 4px 0 6px; }
   .katex-display > .katex { display: inline-block; min-width: max-content; }
+  /* 真的溢出的公式才提示"可右滑"：浅灰背景 + 右侧渐变阴影 */
+  .katex-display.is-scrollable {
+    background-color: #f1f5f9; border-radius: 6px;
+    padding: 6px 14px;
+    background-image: linear-gradient(to right, transparent calc(100% - 36px), rgba(15, 23, 42, .18));
+  }
   pre[class*="language-"] { overflow-x: auto; max-width: 100%; }
   .table-wrap, table { max-width: 100%; }
   table { display: block; overflow-x: auto; }
