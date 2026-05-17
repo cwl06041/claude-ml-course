@@ -1,33 +1,44 @@
 /* PWA 相关：SW 注册 + 更新检测 + 公式溢出提示
    四个 HTML 共用，避免重复维护。 */
 
-/* ===== 1. Service Worker 注册 + 新版本检测 ===== */
+/* ===== 1. Service Worker 注册（让 navigation 强制走网络，绕过 Safari HTTP 缓存）===== */
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', async () => {
-    let reg;
-    try {
-      reg = await navigator.serviceWorker.register('sw.js');
-    } catch (e) { return; }
-    // 主动检查更新（iOS Safari 不会自动查）
-    try { reg.update(); } catch (e) {}
-    // 检测到新版本 SW → 提示用户
-    reg.addEventListener('updatefound', () => {
-      const nw = reg.installing;
-      if (!nw) return;
-      nw.addEventListener('statechange', () => {
-        if (nw.state === 'installed' && navigator.serviceWorker.controller) {
-          showUpdateToast();
-        }
-      });
-    });
-    // PWA 切回前台时再 check 一次
-    document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'visible') {
-        try { reg.update(); } catch (e) {}
-      }
-    });
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
   });
 }
+
+/* ===== 2. 内容更新检测：visibilitychange 时主动 fetch 当前 URL，比较 hash =====
+   不依赖 SW updatefound（因为 sw.js 文件本身不变时它不触发） */
+(function () {
+  let currentHash = null;
+
+  async function hashPage() {
+    try {
+      const resp = await fetch(location.href, { cache: 'no-store' });
+      if (!resp.ok) return null;
+      const buf = await resp.arrayBuffer();
+      const hash = await crypto.subtle.digest('SHA-256', buf);
+      return Array.from(new Uint8Array(hash))
+        .slice(0, 8)
+        .map(b => b.toString(16).padStart(2, '0'))
+        .join('');
+    } catch (e) { return null; }
+  }
+
+  window.addEventListener('load', async () => {
+    currentHash = await hashPage();
+  });
+
+  document.addEventListener('visibilitychange', async () => {
+    if (document.visibilityState !== 'visible' || currentHash == null) return;
+    const now = await hashPage();
+    if (now != null && now !== currentHash) {
+      currentHash = now;
+      showUpdateToast();
+    }
+  });
+})();
 
 function showUpdateToast() {
   if (document.getElementById('__updateToast')) return;
