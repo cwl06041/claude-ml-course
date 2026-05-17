@@ -12,25 +12,108 @@
 <title>ML 学习课程目录</title>
 <style>
   * { box-sizing: border-box; }
+  html, body { background: #f8fafc; }
   body { font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Segoe UI", sans-serif;
          max-width: 720px; margin: 0 auto; padding: 40px 20px 80px;
-         color: #1f2937; line-height: 1.7; background: #f8fafc; font-size: 16px; }
-  h1 { font-size: 28px; margin: 0 0 8px; letter-spacing: -0.02em; }
-  .lead { color: #6b7280; margin: 0 0 32px; }
+         color: #1f2937; line-height: 1.7; font-size: 16px;
+         position: relative; min-height: 100vh; overflow-x: hidden; }
+
+  /* 底层：旋转的 conic gradient + blur，类 Stripe / Vercel mesh 风格 */
+  body::before {
+    content: ''; position: fixed; inset: -30%;
+    background: conic-gradient(from 0deg at 50% 50%,
+      rgba(37, 99, 235, .28),
+      rgba(124, 58, 237, .22),
+      rgba(236, 72, 153, .18),
+      rgba(16, 185, 129, .20),
+      rgba(37, 99, 235, .28));
+    filter: blur(70px);
+    animation: spin 50s linear infinite;
+    z-index: -2;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* 中层：SVG 数学装饰 */
+  .bg-deco { position: fixed; inset: 0; z-index: -1;
+             pointer-events: none; overflow: hidden; }
+  .bg-deco svg { width: 100%; height: 100%; position: absolute; inset: 0; }
+  .bg-deco .float { animation: float 8s ease-in-out infinite; }
+  .bg-deco .float2 { animation: float 11s ease-in-out infinite reverse; }
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50%      { transform: translateY(-14px); }
+  }
+
+  h1 { font-size: 32px; margin: 0 0 8px; letter-spacing: -0.02em;
+       background: linear-gradient(120deg, #1e3a8a 0%, #6d28d9 60%, #be185d 100%);
+       -webkit-background-clip: text; background-clip: text;
+       -webkit-text-fill-color: transparent; }
+  .lead { color: #475569; margin: 0 0 32px; }
+
   .card-link { display: block; text-decoration: none; color: inherit;
-               background: white; border: 1px solid #e2e8f0; border-radius: 12px;
-               padding: 20px 22px; margin: 14px 0;
-               box-shadow: 0 1px 3px rgba(0,0,0,.04);
-               transition: transform .15s, box-shadow .15s, border-color .15s; }
+               background: rgba(255, 255, 255, 0.72);
+               backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+               border: 1px solid rgba(255, 255, 255, 0.5);
+               border-radius: 14px; padding: 20px 22px; margin: 14px 0;
+               box-shadow: 0 4px 18px rgba(15, 23, 42, 0.06);
+               transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease; }
   .card-link:hover, .card-link:active {
-    border-color: #2563eb; box-shadow: 0 4px 12px rgba(37,99,235,.12);
-    transform: translateY(-1px); }
+    border-color: rgba(37, 99, 235, 0.6);
+    box-shadow: 0 8px 24px rgba(37, 99, 235, 0.18);
+    transform: translateY(-2px); }
   .card-link h2 { font-size: 19px; margin: 0 0 6px; color: #2563eb; }
   .card-link p { margin: 0; color: #475569; font-size: 14.5px; }
   .meta { color: #94a3b8; font-size: 12px; margin-top: 24px; text-align: center; }
+
+  @media (prefers-reduced-motion: reduce) {
+    body::before, .bg-deco .float, .bg-deco .float2 { animation: none; }
+  }
 </style>
 </head>
 <body>
+
+<div class="bg-deco" aria-hidden="true">
+  <svg viewBox="0 0 1200 800" preserveAspectRatio="xMidYMid slice">
+    <!-- 线性回归：拟合直线 -->
+    <line x1="-40" y1="720" x2="1240" y2="120"
+          stroke="#2563eb" stroke-width="2.5" opacity="0.22"/>
+    <!-- 数据散点（围绕拟合直线） -->
+    <g fill="#2563eb" opacity="0.30">
+      <circle cx="90"   cy="700" r="5"/>
+      <circle cx="170"  cy="640" r="6"/>
+      <circle cx="260"  cy="610" r="5"/>
+      <circle cx="340"  cy="555" r="6"/>
+      <circle cx="420"  cy="490" r="5"/>
+      <circle cx="510"  cy="445" r="6"/>
+      <circle cx="600"  cy="395" r="5"/>
+      <circle cx="690"  cy="355" r="6"/>
+      <circle cx="780"  cy="280" r="5"/>
+      <circle cx="870"  cy="240" r="6"/>
+      <circle cx="960"  cy="200" r="5"/>
+      <circle cx="1050" cy="155" r="6"/>
+      <circle cx="1130" cy="130" r="5"/>
+    </g>
+
+    <!-- 逻辑回归：sigmoid 曲线 -->
+    <path d="M -40 720 C 280 720, 470 720, 600 410
+             C 730 100, 920 100, 1240 100"
+          stroke="#7c3aed" stroke-width="2.5" opacity="0.22" fill="none"/>
+
+    <!-- 浮动的数学符号 -->
+    <g class="float">
+      <text x="80"  y="160" font-family="Georgia, serif" font-size="44"
+            font-style="italic" fill="#2563eb" opacity="0.16">∂L/∂w</text>
+      <text x="940" y="640" font-family="Georgia, serif" font-size="42"
+            font-style="italic" fill="#be185d" opacity="0.16">y = wx + b</text>
+    </g>
+    <g class="float2">
+      <text x="980" y="220" font-family="Georgia, serif" font-size="42"
+            font-style="italic" fill="#7c3aed" opacity="0.18">σ(z)</text>
+      <text x="120" y="640" font-family="Georgia, serif" font-size="38"
+            font-style="italic" fill="#16a34a" opacity="0.16">Σ(yᵢ−ŷᵢ)²</text>
+    </g>
+  </svg>
+</div>
 
 <h1>机器学习学习课程</h1>
 <p class="lead">为有大学数学基础但有些遗忘的读者写的入门课程。重点是<strong>每一步为什么这么做</strong>。</p>
