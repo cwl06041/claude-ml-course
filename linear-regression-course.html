@@ -108,9 +108,70 @@
   .meta { color: var(--muted); font-size: 13px; }
   .step-box { background: white; border: 1px solid var(--border); padding: 10px 14px;
               border-radius: 6px; margin: 6px 0; font-family: ui-monospace, monospace; font-size: 14px; }
+
+  /* 阅读进度条 */
+  .reading-progress { position: fixed; top: 0; left: 0; height: 3px;
+                      background: var(--accent); width: 0%; z-index: 200;
+                      transition: width .08s linear; }
+
+  /* 浮动目录按钮（FAB） */
+  .toc-fab { position: fixed; bottom: 22px; right: 22px;
+             width: 56px; height: 56px; border-radius: 50%;
+             background: var(--accent); color: white; border: none;
+             font-size: 14px; font-weight: 600; padding: 0;
+             box-shadow: 0 6px 18px rgba(37, 99, 235, .35);
+             cursor: pointer; z-index: 150;
+             display: flex; align-items: center; justify-content: center; }
+  .toc-fab:hover { background: #1d4ed8; }
+  .toc-fab:active { transform: scale(.95); }
+
+  /* 抽屉 */
+  .toc-drawer { position: fixed; inset: 0; z-index: 199; }
+  .toc-drawer[hidden] { display: none; }
+  .toc-drawer-mask { position: absolute; inset: 0;
+                     background: rgba(15, 23, 42, .45);
+                     opacity: 0; transition: opacity .25s; }
+  .toc-drawer.open .toc-drawer-mask { opacity: 1; }
+  .toc-drawer-panel { position: absolute; top: 0; right: 0; bottom: 0;
+                      width: min(82vw, 320px); background: var(--card);
+                      box-shadow: -8px 0 24px rgba(0,0,0,.18);
+                      transform: translateX(100%); transition: transform .28s;
+                      display: flex; flex-direction: column; }
+  .toc-drawer.open .toc-drawer-panel { transform: translateX(0); }
+  .toc-drawer-panel header { display: flex; align-items: center;
+                             justify-content: space-between;
+                             padding: 14px 18px; border-bottom: 1px solid var(--border);
+                             font-weight: 600; color: var(--fg); font-size: 15px; }
+  .toc-drawer-close { background: none; border: none; color: var(--muted);
+                      font-size: 26px; cursor: pointer; padding: 0 6px;
+                      line-height: 1; }
+  .toc-drawer-close:hover { color: var(--fg); }
+  .toc-drawer-panel nav { flex: 1; overflow-y: auto; padding: 10px 8px; }
+  .toc-drawer-panel nav a { display: block; color: var(--accent);
+                            text-decoration: none; padding: 11px 14px;
+                            font-size: 15.5px; border-radius: 7px;
+                            margin: 2px 0; }
+  .toc-drawer-panel nav a:hover { background: #eff6ff; }
+  .toc-drawer-panel nav a.active { background: var(--accent); color: white;
+                                   font-weight: 600; }
+
+  /* 桌面端 ≥1280px：FAB 隐藏（已有右侧固定栏） */
+  @media (min-width: 1280px) {
+    .toc-fab { display: none; }
+  }
 </style>
 </head>
 <body>
+
+<div class="reading-progress" id="readingProgress"></div>
+<button class="toc-fab" id="tocFab" aria-label="打开目录">目录</button>
+<div class="toc-drawer" id="tocDrawer" hidden>
+  <div class="toc-drawer-mask"></div>
+  <aside class="toc-drawer-panel" role="dialog" aria-label="目录">
+    <header><span>目录</span><button class="toc-drawer-close" aria-label="关闭目录">×</button></header>
+    <nav id="tocDrawerNav"></nav>
+  </aside>
+</div>
 
 <h1>线性回归：从场景到代码</h1>
 <p class="lead">为有大学数学基础但有些遗忘的读者写。重点是<strong>每一步为什么这么做</strong>。</p>
@@ -1728,14 +1789,24 @@ document.querySelectorAll(".quiz-q").forEach(q => {
   });
 });
 
-/* 目录滚动高亮：当前可见章节加 .active */
+/* 目录：克隆链接到抽屉 + 滚动高亮同步两边 */
 (function () {
-  const tocLinks = document.querySelectorAll(".toc a");
-  if (!tocLinks.length) return;
+  // 把顶部 .toc 里的链接克隆一份到抽屉的 nav 里
+  const drawerNav = document.getElementById("tocDrawerNav");
+  if (drawerNav) {
+    document.querySelectorAll(".toc a").forEach(a => {
+      drawerNav.appendChild(a.cloneNode(true));
+    });
+  }
+
+  // 同时高亮 .toc 和抽屉里的对应链接
+  const allLinks = document.querySelectorAll(".toc a, #tocDrawerNav a");
+  if (!allLinks.length) return;
   const linkMap = new Map();
-  tocLinks.forEach(a => {
+  allLinks.forEach(a => {
     const id = a.getAttribute("href").slice(1);
-    linkMap.set(id, a);
+    if (!linkMap.has(id)) linkMap.set(id, []);
+    linkMap.get(id).push(a);
   });
   const sections = Array.from(linkMap.keys())
     .map(id => document.getElementById(id))
@@ -1748,15 +1819,60 @@ document.querySelectorAll(".quiz-q").forEach(q => {
       if (s.getBoundingClientRect().top <= probe) current = s;
       else break;
     }
-    tocLinks.forEach(a => a.classList.remove("active"));
+    allLinks.forEach(a => a.classList.remove("active"));
     if (current) {
-      const a = linkMap.get(current.id);
-      if (a) a.classList.add("active");
+      const arr = linkMap.get(current.id);
+      if (arr) arr.forEach(a => a.classList.add("active"));
     }
   }
   update();
   window.addEventListener("scroll", update, { passive: true });
   window.addEventListener("resize", update);
+})();
+
+/* 阅读进度条 */
+(function () {
+  const bar = document.getElementById("readingProgress");
+  if (!bar) return;
+  function update() {
+    const h = document.documentElement;
+    const scrolled = h.scrollTop || document.body.scrollTop;
+    const max = (h.scrollHeight || document.body.scrollHeight) - h.clientHeight;
+    bar.style.width = (max > 0 ? (scrolled / max) * 100 : 0) + "%";
+  }
+  update();
+  window.addEventListener("scroll", update, { passive: true });
+  window.addEventListener("resize", update);
+})();
+
+/* 抽屉开关 */
+(function () {
+  const drawer = document.getElementById("tocDrawer");
+  const fab = document.getElementById("tocFab");
+  if (!drawer || !fab) return;
+  const mask = drawer.querySelector(".toc-drawer-mask");
+  const closeBtn = drawer.querySelector(".toc-drawer-close");
+  const nav = drawer.querySelector("nav");
+
+  function open() {
+    drawer.hidden = false;
+    requestAnimationFrame(() => drawer.classList.add("open"));
+    document.body.style.overflow = "hidden";
+  }
+  function close() {
+    drawer.classList.remove("open");
+    document.body.style.overflow = "";
+    setTimeout(() => { drawer.hidden = true; }, 280);
+  }
+  fab.addEventListener("click", open);
+  mask.addEventListener("click", close);
+  closeBtn.addEventListener("click", close);
+  nav.addEventListener("click", e => {
+    if (e.target.tagName === "A") close();
+  });
+  document.addEventListener("keydown", e => {
+    if (e.key === "Escape" && !drawer.hidden) close();
+  });
 })();
 </script>
 
