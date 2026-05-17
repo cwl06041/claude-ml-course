@@ -1880,7 +1880,7 @@ document.querySelectorAll(".quiz-q").forEach(q => {
   window.addEventListener("resize", update);
 })();
 
-/* 抽屉开关 */
+/* 抽屉开关 + 触摸手势 */
 (function () {
   const drawer = document.getElementById("tocDrawer");
   const fab = document.getElementById("tocFab");
@@ -1888,7 +1888,10 @@ document.querySelectorAll(".quiz-q").forEach(q => {
   const mask = drawer.querySelector(".toc-drawer-mask");
   const closeBtn = drawer.querySelector(".toc-drawer-close");
   const nav = drawer.querySelector("nav");
+  const panel = drawer.querySelector(".toc-drawer-panel");
+  const header = panel.querySelector("header");
 
+  const isOpen = () => drawer.classList.contains("open");
   function open() {
     drawer.hidden = false;
     requestAnimationFrame(() => drawer.classList.add("open"));
@@ -1906,7 +1909,54 @@ document.querySelectorAll(".quiz-q").forEach(q => {
     if (e.target.tagName === "A") close();
   });
   document.addEventListener("keydown", e => {
-    if (e.key === "Escape" && !drawer.hidden) close();
+    if (e.key === "Escape" && isOpen()) close();
+  });
+
+  // —— 手势 1：从屏幕右边缘左滑呼出（仅 PWA standalone 模式，避免与浏览器系统手势冲突）——
+  const isStandalone = window.matchMedia("(display-mode: standalone)").matches
+                    || window.navigator.standalone === true;
+  if (isStandalone) {
+    let startX = 0, startY = 0, tracking = false;
+    const EDGE = 20, TRIGGER = 60;
+    document.addEventListener("touchstart", e => {
+      if (isOpen()) return;
+      const t = e.touches[0];
+      if (t.clientX >= window.innerWidth - EDGE) {
+        tracking = true; startX = t.clientX; startY = t.clientY;
+      }
+    }, { passive: true });
+    document.addEventListener("touchmove", e => {
+      if (!tracking) return;
+      const t = e.touches[0];
+      const dx = startX - t.clientX;
+      const dy = Math.abs(t.clientY - startY);
+      if (dx > TRIGGER && dx > dy) { open(); tracking = false; }
+    }, { passive: true });
+    document.addEventListener("touchend", () => { tracking = false; });
+  }
+
+  // —— 手势 2：抽屉 header 上向右拖关闭（所有模式都启用）——
+  let dragStartX = 0, dragDx = 0, dragging = false;
+  header.addEventListener("touchstart", e => {
+    if (!isOpen()) return;
+    dragging = true;
+    dragStartX = e.touches[0].clientX;
+    dragDx = 0;
+    panel.style.transition = "none";
+  }, { passive: true });
+  header.addEventListener("touchmove", e => {
+    if (!dragging) return;
+    const dx = e.touches[0].clientX - dragStartX;
+    if (dx <= 0) return;
+    dragDx = dx;
+    panel.style.transform = `translateX(${dx}px)`;
+  }, { passive: true });
+  header.addEventListener("touchend", () => {
+    if (!dragging) return;
+    panel.style.transition = "";
+    panel.style.transform = "";
+    if (dragDx > 80) close();
+    dragging = false;
   });
 })();
 </script>
