@@ -71,6 +71,24 @@
   .toc a { color: var(--accent); text-decoration: none; margin-right: 14px; white-space: nowrap;
            display: inline-block; padding: 2px 6px; border-radius: 4px; }
   .toc a:hover { background: #eff6ff; }
+  .toc a.active { background: var(--accent); color: white; font-weight: 600; }
+  /* 侧边目录（宽屏） */
+  @media (min-width: 1280px) {
+    .toc { position: fixed; top: 20px; right: 20px; width: 220px; max-height: calc(100vh - 40px);
+           overflow-y: auto; margin-bottom: 0; padding: 16px 18px; }
+    .toc-title { display: block; margin: 0 0 10px; font-size: 13px;
+                 text-transform: uppercase; letter-spacing: 0.05em; }
+    .toc a { display: block; margin: 0 0 4px; padding: 6px 10px; font-size: 13.5px;
+             border-left: 2px solid transparent; border-radius: 0 4px 4px 0; }
+    .toc a:hover { background: #eff6ff; border-left-color: var(--accent); }
+    .toc a.active { background: #eff6ff; color: var(--accent);
+                    border-left-color: var(--accent); font-weight: 600; }
+    .toc a.sub { padding-left: 24px; font-size: 12.5px; color: var(--muted); }
+    .toc a.sub:hover { color: var(--accent); }
+  }
+  @media (max-width: 1279px) {
+    .toc a.sub { display: none; }
+  }
   .quiz-q { margin: 18px 0; padding: 14px 18px; background: #f8fafc;
             border: 1px solid var(--border); border-radius: 8px; }
   .quiz-opts label { display: block; cursor: pointer; padding: 6px 10px; border-radius: 5px;
@@ -1706,6 +1724,37 @@ document.querySelectorAll(".quiz-q").forEach(q => {
     });
   });
 });
+
+/* 目录滚动高亮：当前可见章节加 .active */
+(function () {
+  const tocLinks = document.querySelectorAll(".toc a");
+  if (!tocLinks.length) return;
+  const linkMap = new Map();
+  tocLinks.forEach(a => {
+    const id = a.getAttribute("href").slice(1);
+    linkMap.set(id, a);
+  });
+  const sections = Array.from(linkMap.keys())
+    .map(id => document.getElementById(id))
+    .filter(Boolean);
+
+  function update() {
+    const probe = window.innerHeight * 0.25;
+    let current = sections[0];
+    for (const s of sections) {
+      if (s.getBoundingClientRect().top <= probe) current = s;
+      else break;
+    }
+    tocLinks.forEach(a => a.classList.remove("active"));
+    if (current) {
+      const a = linkMap.get(current.id);
+      if (a) a.classList.add("active");
+    }
+  }
+  update();
+  window.addEventListener("scroll", update, { passive: true });
+  window.addEventListener("resize", update);
+})();
 </script>
 
 </body>
