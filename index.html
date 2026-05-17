@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>ML 学习课程目录</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Segoe UI", sans-serif;
+         max-width: 720px; margin: 0 auto; padding: 40px 20px 80px;
+         color: #1f2937; line-height: 1.7; background: #f8fafc; font-size: 16px; }
+  h1 { font-size: 28px; margin: 0 0 8px; letter-spacing: -0.02em; }
+  .lead { color: #6b7280; margin: 0 0 32px; }
+  .card-link { display: block; text-decoration: none; color: inherit;
+               background: white; border: 1px solid #e2e8f0; border-radius: 12px;
+               padding: 20px 22px; margin: 14px 0;
+               box-shadow: 0 1px 3px rgba(0,0,0,.04);
+               transition: transform .15s, box-shadow .15s, border-color .15s; }
+  .card-link:hover, .card-link:active {
+    border-color: #2563eb; box-shadow: 0 4px 12px rgba(37,99,235,.12);
+    transform: translateY(-1px); }
+  .card-link h2 { font-size: 19px; margin: 0 0 6px; color: #2563eb; }
+  .card-link p { margin: 0; color: #475569; font-size: 14.5px; }
+  .meta { color: #94a3b8; font-size: 12px; margin-top: 24px; text-align: center; }
+</style>
+</head>
+<body>
+
+<h1>机器学习学习课程</h1>
+<p class="lead">为有大学数学基础但有些遗忘的读者写的入门课程。重点是<strong>每一步为什么这么做</strong>。</p>
+
+<a class="card-link" href="linear-regression-course.html">
+  <h2>线性回归 · 从场景到代码</h2>
+  <p>房价预测主线。9 个章节：数学预热 → 模型 → 损失 → 梯度下降 → 超参数 → 编程练习 → 测试。含互动滑块。</p>
+</a>
+
+<a class="card-link" href="logistic-regression-course.html">
+  <h2>逻辑回归 · 从场景到代码</h2>
+  <p>学生考试通过预测主线。约 35 分钟体量：sigmoid、对数损失、正则化、二维决策边界互动。</p>
+</a>
+
+<a class="card-link" href="math-viz.html">
+  <h2>数学可视化图集</h2>
+  <p>独立的数学图合集：V 形损失、sigmoid、对数损失爆炸、高斯分布等。</p>
+</a>
+
+<p class="meta">单文件 HTML，首次加载需要联网（KaTeX + Prism CDN）。</p>
+
+</body>
+</html>

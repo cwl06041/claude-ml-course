@@ -64,30 +64,33 @@
                             font-size: 13.5px; padding: 14px 16px; margin: 12px 0; }
   code:not([class*="language-"]) { background: var(--code-bg); padding: 2px 6px; border-radius: 4px;
          font-size: 0.9em; color: #b91c1c; }
+  /* 目录 —— 手机/平板：2 列卡片按钮 */
   .toc { position: sticky; top: 12px; background: var(--card); border: 1px solid var(--border);
-         border-radius: 10px; padding: 14px 20px; margin-bottom: 24px;
-         font-size: 14px; box-shadow: 0 2px 8px rgba(0,0,0,.06); z-index: 10; }
-  .toc-title { font-weight: 600; color: var(--muted); margin-right: 10px; font-size: 13px; }
-  .toc a { color: var(--accent); text-decoration: none; margin-right: 14px; white-space: nowrap;
-           display: inline-block; padding: 2px 6px; border-radius: 4px; }
+         border-radius: 10px; padding: 14px 16px; margin-bottom: 24px;
+         box-shadow: 0 2px 8px rgba(0,0,0,.06); z-index: 10;
+         display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px 10px; }
+  .toc-title { grid-column: 1 / -1; font-weight: 600; color: var(--muted);
+               margin: 0 0 2px; font-size: 12px;
+               text-transform: uppercase; letter-spacing: 0.06em; }
+  .toc a { color: var(--accent); text-decoration: none; display: block;
+           padding: 9px 12px; border-radius: 7px; font-size: 15px;
+           background: #f8fafc; border: 1px solid var(--border);
+           white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .toc a:hover { background: #eff6ff; }
-  .toc a.active { background: var(--accent); color: white; font-weight: 600; }
-  /* 侧边目录（宽屏） */
+  .toc a.active { background: var(--accent); color: white; border-color: var(--accent);
+                  font-weight: 600; }
+  /* 目录 —— 宽屏：右侧固定竖排 */
   @media (min-width: 1280px) {
     .toc { position: fixed; top: 20px; right: 20px; width: 220px; max-height: calc(100vh - 40px);
-           overflow-y: auto; margin-bottom: 0; padding: 16px 18px; }
-    .toc-title { display: block; margin: 0 0 10px; font-size: 13px;
-                 text-transform: uppercase; letter-spacing: 0.05em; }
-    .toc a { display: block; margin: 0 0 4px; padding: 6px 10px; font-size: 13.5px;
-             border-left: 2px solid transparent; border-radius: 0 4px 4px 0; }
+           overflow-y: auto; margin-bottom: 0; padding: 16px 14px;
+           display: block; }
+    .toc-title { display: block; margin: 0 0 10px; }
+    .toc a { display: block; margin: 0 0 4px; padding: 7px 12px; font-size: 13.5px;
+             background: transparent; border: none; border-left: 2px solid transparent;
+             border-radius: 0 4px 4px 0; white-space: normal; }
     .toc a:hover { background: #eff6ff; border-left-color: var(--accent); }
     .toc a.active { background: #eff6ff; color: var(--accent);
                     border-left-color: var(--accent); font-weight: 600; }
-    .toc a.sub { padding-left: 24px; font-size: 12.5px; color: var(--muted); }
-    .toc a.sub:hover { color: var(--accent); }
-  }
-  @media (max-width: 1279px) {
-    .toc a.sub { display: none; }
   }
   .quiz-q { margin: 18px 0; padding: 14px 18px; background: #f8fafc;
             border: 1px solid var(--border); border-radius: 8px; }
