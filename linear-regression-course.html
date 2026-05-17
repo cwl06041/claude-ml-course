@@ -64,10 +64,10 @@
                             font-size: 13.5px; padding: 14px 16px; margin: 12px 0; }
   code:not([class*="language-"]) { background: var(--code-bg); padding: 2px 6px; border-radius: 4px;
          font-size: 0.9em; color: #b91c1c; }
-  /* 目录 —— 手机/平板：2 列卡片按钮 */
-  .toc { position: sticky; top: 12px; background: var(--card); border: 1px solid var(--border);
+  /* 目录 —— 手机/平板：首屏概览的 2 列卡片网格，滚动后由右下 FAB 接管 */
+  .toc { background: var(--card); border: 1px solid var(--border);
          border-radius: 10px; padding: 14px 16px; margin-bottom: 24px;
-         box-shadow: 0 2px 8px rgba(0,0,0,.06); z-index: 10;
+         box-shadow: 0 2px 8px rgba(0,0,0,.06);
          display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px 10px; }
   .toc-title { grid-column: 1 / -1; font-weight: 600; color: var(--muted);
                margin: 0 0 2px; font-size: 12px;
