@@ -46,6 +46,15 @@
   .tip { background: #f0f9ff; border-left: 4px solid #0284c7; padding: 12px 18px;
          margin: 14px 0; border-radius: 6px; font-size: 14px; color: #075985; }
   svg { display: block; margin: 8px auto; max-width: 100%; height: auto; }
+
+  /* 防止长公式/表格/代码块在窄屏溢出 —— 改为横向滚动 */
+  .katex-display { overflow-x: auto; overflow-y: hidden;
+                   max-width: 100%; padding: 4px 0 6px; }
+  .katex-display > .katex { display: inline-block; min-width: max-content; }
+  pre[class*="language-"] { overflow-x: auto; max-width: 100%; }
+  .table-wrap, table { max-width: 100%; }
+  table { display: block; overflow-x: auto; }
+  @media (min-width: 720px) { table { display: table; overflow-x: visible; } }
   .legend { display: flex; gap: 18px; justify-content: center; font-size: 14px;
             color: #475569; flex-wrap: wrap; margin: 6px 0; }
   .swatch { display: inline-block; width: 16px; height: 3px; vertical-align: middle; margin-right: 6px; }
