@@ -285,11 +285,54 @@
   <p>对几率再取一个对数，取值范围一下子扩到 $(-\infty, +\infty)$ —— <strong>正好和线性组合的范围对上了</strong>！</p>
   <svg id="plot-logit" viewBox="0 0 640 320"></svg>
 
+  <p class="meta">⚠️ <strong>注意：这条曲线不是直线 —— logit 函数本身关于 $p$ 是非线性的</strong>（S 形拉直，在 $p=0, 1$ 处往 $\pm\infty$ 爆炸）。下面 Step 3 说"log-odds 线性"<strong>不是说这条曲线变直了</strong>，指的是另一回事：$\text{logit}(p)$ 关于<strong>特征 $\mathbf{x}$</strong> 才是直线关系。两个"线性/非线性"不是同一件事，下面对比表里再展开。</p>
+
   <h4>Step 3：关键假设 —— log-odds 是线性的</h4>
   <p>$$\ln \frac{p}{1-p} = \mathbf{w}^\top \mathbf{x} + b = z$$</p>
+
+  <p>这才是"线性"的真正含义 —— 横轴<strong>特征 $x$</strong>、纵轴 $\text{logit}(p)$，是一条<strong>直线</strong>（不是 Step 2 那条 S 形曲线）：</p>
+  <svg id="plot-logit-vs-x" viewBox="0 0 640 320"></svg>
+  <p class="meta">举例：假设 $w = 0.5,\ b = -3$，即 $\text{logit}(p) = 0.5x - 3$。三个红点演示"特征值 → logit → 概率"的完整链：<br>
+  • $x = 0$（没学习）→ logit $= -3$ → $p \approx 0.047$（几乎不通过）<br>
+  • $x = 6$（学 6 小时）→ logit $= 0$ → $p = 0.5$（决策边界，最不确定）<br>
+  • $x = 12$（学 12 小时）→ logit $= 3$ → $p \approx 0.953$（几乎一定通过）<br>
+  关键观察：<strong>logit 关于 $x$ 是直线</strong>（每多学 1 小时 logit 增加 0.5，斜率恒定）。但反解回概率 $p$，就成了你在 1.4 节看到的 sigmoid 形状 —— 同一条直线、两种视角。</p>
+
   <div class="why">
-    这是逻辑回归的<strong>本质假设</strong>。线性回归说"y 是 x 的线性函数"，逻辑回归说"log-odds 是 x 的线性函数"。<strong>线性模型族的"线性"指的是参数 w, b 出现的方式</strong>，不是说 p 和 x 是线性关系。
+    这是逻辑回归的<strong>本质假设</strong>。线性回归说"$y$ 是 $\mathbf{x}$ 的线性函数"，逻辑回归说"$\text{logit}(p)$ 是 $\mathbf{x}$ 的线性函数"。<strong>线性模型族的"线性"指的是参数 $\mathbf{w}, b$ 出现的方式</strong>，不是说 $p$ 和 $\mathbf{x}$ 是线性关系，更不是说 logit 函数本身（上图那条曲线）是直的。<br><br>
+
+    <strong>真正的数学顺序其实跟教学反着讲</strong>。本节按"想要 0-1 概率 → 线性范围对不上 → 造 sigmoid"教，但真实数学故事是从另一头来：
+    <table style="margin:10px 0;">
+      <tr><th></th><th>教学顺序（本节）</th><th>数学顺序（真实故事）</th></tr>
+      <tr><td>起点</td><td>想要 $p \in [0,1]$</td><td>假设 $\text{logit}(p) = \mathbf{w}^\top \mathbf{x} + b$ 是线性</td></tr>
+      <tr><td>看到的"矛盾"</td><td>$\mathbf{w}^\top \mathbf{x} + b$ 范围 $(-\infty, +\infty)$ 跟 $[0,1]$ 对不上</td><td>没矛盾 —— 左右两边都是 $(-\infty, +\infty)$，天然吻合</td></tr>
+      <tr><td>动作</td><td>"造一个 sigmoid 把线性压扁到 $[0,1]$"</td><td>反解 $p$ → $p = \frac{1}{1+e^{-(\mathbf{w}^\top\mathbf{x}+b)}}$（自动是 sigmoid 形式）</td></tr>
+      <tr><td>结果</td><td>sigmoid + 线性 = 逻辑回归</td><td>同一个模型，只是导出路径不同</td></tr>
+    </table>
+
+    <strong>关键 insight</strong>：sigmoid 不是临时拼凑的"压扁器"，而是"log-odds 关于 $\mathbf{x}$ 线性" 这条建模假设的<strong>代数副产品</strong>。教学倒着讲只是因为读者还没听说过 log-odds，从概率视角入手更直观。
   </div>
+
+  <p><strong>这条线性假设直观吗</strong>？翻译成人话：<em>"每多 1 单位特征，赢面（几率 odds）乘以一个固定倍数"</em>。乘法效应取对数自动变成加法（也就是线性）。所以听起来抽象的"log-odds 线性"，本质上是个跟"复利"、"传染率"一个套路的自然假设。</p>
+
+  <details>
+    <summary>展开一层：具体数字 + 为什么"乘法效应"是自然假设（可跳过）</summary>
+    <p><strong>具体数字感受一下</strong>。设基线几率（不学习时）= 1:20 = 0.05，假设每多学 1 小时几率 ×1.65：</p>
+    <ul>
+      <li>$x = 0$：odds $= 0.05$ → $p \approx 0.048$（几乎不通过）</li>
+      <li>$x = 6$：odds $= 0.05 \times 1.65^6 \approx 1.01$ → $p = 0.50$（决策边界）</li>
+      <li>$x = 12$：odds $= 0.05 \times 1.65^{12} \approx 20.4$ → $p \approx 0.953$（几乎一定通过）</li>
+    </ul>
+    <p>几率本身是<strong>指数曲线</strong>（$0.05 \to 1 \to 20$，一路飞涨），但取 $\ln$ 后立刻变直线：$\ln(\text{odds}) = \ln(0.05) + x \cdot \ln(1.65) \approx -3 + 0.5x$。这正是上面 SVG 里那条蓝线。</p>
+
+    <p><strong>为什么"乘法效应"是自然假设</strong>？三层理由：</p>
+    <ol>
+      <li><strong>边界问题</strong>：概率被卡在 $[0,1]$。"每小时加固定概率"在边界附近会爆掉（如 $p = 0.05 + 10 \times 0.1 = 1.05 > 1$）。但 odds 没上界（$[0, +\infty)$），乘法自动绕过这个问题。</li>
+      <li><strong>相对影响比绝对影响更稳定</strong>：人脑对"翻倍 / 减半"敏感（复利、价格折扣都是这套），对"加 0.1"不敏感（"5% 提升到 15%"和"50% 提升到 60%"虽然都加 10%，但难度天差地别）。乘法效应捕捉的是<em>相对变化</em>，更符合"影响大小"的直觉。</li>
+      <li><strong>贝叶斯定理本来就这样</strong>：log 空间下，"后验 log-odds = 先验 log-odds + 每条证据贡献的 log 似然比"，是天然的加法结构。如果每个特征贡献固定 log 似然比 → 总 log-odds 关于特征线性。</li>
+    </ol>
+    <p class="meta">⚙️ 若想再深一层：理由 3 在 LDA 假设下能严格证明（两类特征都是协方差相同的高斯分布时，logit 关于 $\mathbf{x}$ 精确是线性）。但这些理论锚点不影响使用 —— 知道"乘法效应"这层直觉就够了。</p>
+  </details>
 
   <h3>2.2 反解：从 log-odds 回到概率</h3>
   <p>把 $\ln \dfrac{p}{1-p} = z$ 解出 $p$：</p>
@@ -326,10 +369,48 @@
   <svg id="plot-interactive" viewBox="0 0 640 360"></svg>
 
   <h3>2.5 二维情况：决策边界是一条直线</h3>
-  <p>加一个特征"睡眠时数"。现在 $z = w_1 x_1 + w_2 x_2 + b$，决策边界 $z=0$ 是平面上的一条直线：</p>
+
+  <h4>先理清"决策边界"在 1D vs 2D 的含义</h4>
+  <table>
+    <tr><th>特征数</th><th>决策边界是什么</th></tr>
+    <tr><td>1D：仅学习时长 $x$</td><td>$x$ 轴上<strong>一个点</strong>（$p = 0.5$ 处的临界 $x$ 值，前面例子是 $x = 6$）</td></tr>
+    <tr><td>2D：学习 $x_1$ + 睡眠 $x_2$</td><td>$(x_1, x_2)$ 平面上一组点 —— 所有让 $p = 0.5$ 的组合连起来</td></tr>
+  </table>
+
+  <h4>2D 的决策边界长什么样</h4>
+  <p>加一个特征"睡眠时数"后，模型变成 $z = w_1 x_1 + w_2 x_2 + b$。下图用的参数是 $w_1 = 0.8,\ w_2 = 0.6,\ b = -7$，所以：</p>
+  <p>$$p = 0.5 \;\Leftrightarrow\; z = 0 \;\Leftrightarrow\; 0.8 x_1 + 0.6 x_2 - 7 = 0$$</p>
+  <p>代几组数（都让 $p = 0.5$）：</p>
+  <table>
+    <tr><th>$x_1$ 学习</th><th>$x_2$ 睡眠</th><th>验证 $z$</th><th>含义</th></tr>
+    <tr><td>2 h</td><td>9 h</td><td>$1.6 + 5.4 - 7 = 0$</td><td>学得少但睡得多，勉强通过</td></tr>
+    <tr><td>5 h</td><td>5 h</td><td>$4.0 + 3.0 - 7 = 0$</td><td>各一半，勉强通过</td></tr>
+    <tr><td>6.5 h</td><td>3 h</td><td>$5.2 + 1.8 - 7 = 0$</td><td>学得多但睡得少，勉强通过</td></tr>
+  </table>
+  <p>这三个点都"勉强能通过" —— 各种"学习与睡眠"的折中。它们和无数个类似的点连起来，就是下图那条紫色直线。</p>
+
+  <h4>为什么这条线一定是直的</h4>
+  <p>$0.8 x_1 + 0.6 x_2 - 7 = 0$ 是 $(x_1, x_2)$ 的<strong>一次方程</strong>，几何上必然是<strong>直线</strong>（中学学的 $ax + by + c = 0$）。这跟线性回归 4.6 节"等高线必然是椭圆"是同种代数推理：</p>
+  <ul>
+    <li>线性回归的等高线方程是<strong>二次方程</strong> → 椭圆</li>
+    <li>逻辑回归的决策边界方程是<strong>一次方程</strong> → 直线</li>
+  </ul>
+  <p>所以"决策边界是直线"不是建模选择，是 <strong>sigmoid + 线性 这套组合的代数必然</strong>。</p>
+
   <svg id="plot-2d-boundary" viewBox="0 0 640 380"></svg>
-  <p class="meta">背景颜色就是 sigmoid 输出的概率（蓝色 = 高概率通过，红色 = 高概率不通过）。直线就是 p=0.5 的位置。</p>
-  <div class="tip">逻辑回归的决策边界永远是<strong>直线</strong>（多维就是超平面）。要想拟合弯曲的边界，得加特征工程（比如加 $x_1^2, x_1 x_2$）或用神经网络。</div>
+  <p class="meta">背景颜色 = sigmoid 输出的 $p$（蓝色 = 高概率通过、红色 = 高概率不通过）。紫色直线 = $p = 0.5$ 处。<strong>关键观察</strong>：沿直线方向走 $p$ 不变（线上所有点都是 0.5）；<em>垂直</em>于直线方向走 → 从远端红到远端蓝平滑过渡，这就是 sigmoid 的 S 形"展开"在 2D 里的样子。</p>
+
+  <h4>维度升级的规律</h4>
+  <table>
+    <tr><th>特征数</th><th>决策边界几何</th><th>方程</th></tr>
+    <tr><td>1</td><td>一个<strong>点</strong></td><td>$w_1 x_1 + b = 0$</td></tr>
+    <tr><td>2</td><td>一条<strong>直线</strong></td><td>$w_1 x_1 + w_2 x_2 + b = 0$</td></tr>
+    <tr><td>3</td><td>一个<strong>平面</strong></td><td>$w_1 x_1 + w_2 x_2 + w_3 x_3 + b = 0$</td></tr>
+    <tr><td>$n$</td><td><strong>超平面</strong>（$n-1$ 维）</td><td>$\mathbf{w}^\top \mathbf{x} + b = 0$</td></tr>
+  </table>
+  <p>每多一个特征，决策边界的维度 +1（点 → 线 → 面 → 超平面），但永远"线性"。</p>
+
+  <div class="tip">逻辑回归的决策边界永远是<strong>直线 / 平面 / 超平面</strong>。要想拟合<em>弯曲</em>的边界，得加特征工程（比如加 $x_1^2, x_1 x_2$，把弯曲塞进特征里），或用神经网络等更复杂模型。</div>
 </section>
 
 <!-- ===================== 3 损失和正则化 ===================== -->
@@ -836,6 +917,39 @@ drawPassScatter("plot-pass-data");
   plotCurve(svg, p => Math.log(p/(1-p)), 0.005, 0.995, ax, "#2563eb", 2.6);
   dot(svg, ax.xPx(0.5), ax.yPx(0), "#dc2626", 5);
   lbl(svg, ax.xPx(0.5)+8, ax.yPx(0)-4, "(0.5, 0)", "#dc2626", 12);
+})();
+
+// =========== 2.1b logit 关于 x 是直线 ===========
+(function(){
+  const svg = document.getElementById("plot-logit-vs-x");
+  if (!svg) return;
+  const w = 0.5, b = -3;  // logit = w*x + b
+  const ax = makeAxes(svg, {xMin:-1, xMax:13, yMin:-4, yMax:4, w:640, h:320,
+    m:{l:60,r:20,t:30,b:42}, xTicks:[0,2,4,6,8,10,12], yTicks:[-3,-2,-1,0,1,2,3],
+    xLabel:"学习时长 x（小时）", yLabel:"logit(p) = w·x + b",
+    title:"建模假设：logit(p) 关于特征 x 是直线（w=0.5, b=-3）"});
+
+  // p=0.5 参考线（即 logit=0）
+  svg.appendChild(svgEl("path", {
+    d: "M" + ax.xPx(-1).toFixed(2) + "," + ax.yPx(0).toFixed(2) +
+       " L" + ax.xPx(13).toFixed(2) + "," + ax.yPx(0).toFixed(2),
+    stroke: "#94a3b8", "stroke-width": 1, "stroke-dasharray": "4,4", fill: "none"
+  }));
+  lbl(svg, ax.xPx(12), ax.yPx(0) - 6, "p = 0.5 决策边界", "#64748b", 11);
+
+  // 直线
+  plotCurve(svg, x => w*x + b, -1, 13, ax, "#1d4ed8", 2.6);
+
+  // 3 个标记点（特征 → logit → 概率）
+  function sigmoid(z) { return 1 / (1 + Math.exp(-z)); }
+  const marks = [[0, -3], [6, 0], [12, 3]];
+  for (const [x, lg] of marks) {
+    dot(svg, ax.xPx(x), ax.yPx(lg), "#dc2626", 5);
+    const p = sigmoid(lg);
+    const dy = lg >= 0 ? -14 : 18;
+    lbl(svg, ax.xPx(x) + 8, ax.yPx(lg) + dy,
+      `(x=${x}, logit=${lg})  p≈${p.toFixed(3)}`, "#dc2626", 11);
+  }
 })();
 
 // =========== 2.2 sigmoid ===========

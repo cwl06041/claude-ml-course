@@ -327,6 +327,7 @@
       <li>$i = k$（$j$ 任意）：这一项是 $A_{kj} w_k w_j$，对 $w_k$ 求导得 $A_{kj} w_j$。$j$ 求和：$\sum_j A_{kj} w_j$</li>
       <li>$j = k$（$i$ 任意）：这一项是 $A_{ik} w_i w_k$，对 $w_k$ 求导得 $A_{ik} w_i$。$i$ 求和：$\sum_i A_{ik} w_i$</li>
     </ul>
+    <p><strong>为什么会有"两种"</strong>？因为 $\mathbf{w}^\top A \mathbf{w}$ 里的两个 $\mathbf{w}$ 是<strong>同一个变量</strong>，但出现在两个位置上 —— <strong>乘积法则</strong>要求每个位置都"激活"一次。类比一元：$\frac{d}{dx}(x \cdot x) = 1 \cdot x + x \cdot 1 = 2x$，两个 $x$ 各贡献一次。上面 $i = k$ 那条来自"左边那个 $\mathbf{w}$ 里的 $w_k$ 被求导"，$j = k$ 那条来自"右边那个 $\mathbf{w}$ 里的 $w_k$ 被求导"。两个位置都不能漏。</p>
     <p>合起来：$\frac{\partial}{\partial w_k}(\mathbf{w}^\top A\mathbf{w}) = \sum_j A_{kj} w_j + \sum_i A_{ik} w_i$。</p>
     <p>当 $A$ 对称（$A_{ij} = A_{ji}$）时两项相等：$= 2 \sum_j A_{kj} w_j = 2 (A\mathbf{w})_k$。</p>
     <p>把所有偏导堆起来 = $2 A \mathbf{w}$ ✓</p>
@@ -798,7 +799,16 @@
     <p style="margin:6px 0 0;"><strong>同一个训练过程的两种看法</strong>：参数视角里点走的每一步，对应数据视角里直线挪一次位置。</p>
   </div>
 
-  <p>损失 $L(w, b)$ 在参数视角下是个二维曲面（碗形）。<strong>从正上方俯瞰</strong>，把"高度（损失）相同"的点连起来 = <strong>等高线</strong>，像地形图：</p>
+  <p>损失 $L(w, b)$ 在参数视角下是个二维曲面（碗形）。要把这个 3D 碗"压"到 2D 图上看，有<strong>三种切法</strong>：</p>
+
+  <table style="margin:8px 0;">
+    <tr><th>切法</th><th>固定什么</th><th>看到什么</th><th>回答什么问题</th></tr>
+    <tr><td>竖切：沿 $w$ 方向</td><td>固定 $b = b_0$</td><td>$L$ vs $w$ 的<strong>抛物线</strong></td><td>截距锁定时，斜率怎么调影响损失？</td></tr>
+    <tr><td>竖切：沿 $b$ 方向</td><td>固定 $w = w_0$</td><td>$L$ vs $b$ 的<strong>抛物线</strong></td><td>斜率锁定时，截距怎么调影响损失？</td></tr>
+    <tr><td><strong>横切（本节用）</strong></td><td>固定 $L = c$</td><td>$(w, b)$ 平面上的<strong>椭圆</strong></td><td>哪些参数组合损失正好等于 $c$？</td></tr>
+  </table>
+
+  <p>三种都是同一个碗的不同切面。前两种各只动一个变量，回到 1D 抛物线（这是 4.4 节用过的视角）；第三种同时动两个变量，看损失"等高度"长什么样。本节用第三种 —— <strong>从正上方俯瞰</strong>、把"高度（损失）相同"的点连起来 = <strong>等高线</strong>，像地形图：</p>
 
   <svg id="plot-loss-contour" viewBox="0 0 640 400"></svg>
 
@@ -821,6 +831,40 @@
   </div>
 
   <details>
+    <summary>为什么等高线一定是椭圆（而不是矩形 / 锯齿 / 任意闭合曲线）？</summary>
+    <p>这不是巧合，是被损失函数的<strong>代数结构</strong>强制的。三步推出来：</p>
+
+    <p><strong>第 1 步：损失展开后只有 2 次项。</strong></p>
+    <p>$L(w, b) = \frac{1}{n}\sum (y_i - wx_i - b)^2$ 把平方展开后，按 $w, b$ 的次数分类整理，结果一定长这样：</p>
+    <p>$$L = \underbrace{A w^2 + B b^2 + C wb}_{\text{二次项}} + \underbrace{D w + E b}_{\text{一次项}} + \underbrace{F}_{\text{常数项}}$$</p>
+    <p>其中 $A, B, C, D, E, F$ 是由数据 $x_i, y_i$ 决定的具体数字。最高次是 2，没有更高次也没有奇怪函数。</p>
+
+    <p><strong>第 2 步：等高线方程就是二次方程。</strong></p>
+    <p>固定 $L = c$，移项：$A w^2 + B b^2 + C wb + D w + E b = (\text{常数})$。这是中学解析几何里学过的二次曲线方程，几何上只可能是这几种：</p>
+    <ul>
+      <li><strong>椭圆</strong>（含圆作为特例）—— ✅ 闭合</li>
+      <li>双曲线 —— ❌ 两支向无穷远</li>
+      <li>抛物线 —— ❌ 一支向无穷远</li>
+      <li>退化（一对直线 / 一个点 / 空集）</li>
+    </ul>
+
+    <p><strong>第 3 步：损失的"碗形"强制等高线闭合 → 只能是椭圆。</strong></p>
+    <p>损失函数有两个铁性质：(a) 永远 $\geq 0$，每项都是平方；(b) 离开最优点 $(w^*, b^*)$ 后严格变大（凸碗形）。这意味着 $\{L = c\}$ 必须是<strong>绕碗一圈的闭合曲线</strong>，不可能跑到无穷远。二次方程 + 闭合 = 排除双曲线和抛物线 = <strong>只能是椭圆</strong>。</p>
+
+    <p class="meta">⚙️ 那二次项的三个系数 $A, B, C$ 具体决定椭圆"圆不圆 / 扁不扁 / 转不转"？打包成 $H = \begin{pmatrix} A & C/2 \\ C/2 & B \end{pmatrix} = \frac{1}{n}\begin{pmatrix} \sum x_i^2 & \sum x_i \\ \sum x_i & n \end{pmatrix}$（这就是 ⓪.6 节的二次型矩阵 / 二阶导 Hessian）。<br>
+    • $\sum x_i = 0$（x 居中）→ 交叉项 = 0 → 椭圆轴对齐，不旋转<br>
+    • 两对角元相等 → 椭圆退化为圆<br>
+    • 两对角元差很大 → 极扁椭圆（条件数大、GD 之字形震荡，下面那条折叠块讲）</p>
+
+    <p class="meta">📐 1D / 2D / 高维的几何形状对照：</p>
+    <ul>
+      <li>1 个参数 $w$：$L(w)$ 是<strong>一条抛物线</strong>（in 2D 平面 $(w, L)$）</li>
+      <li>2 个参数 $w, b$：$L(w, b)$ 是<strong>一个碗</strong>（旋转抛物面 paraboloid，in 3D 空间）。水平切片 = 椭圆</li>
+      <li>$n$ 个参数：$L(\mathbf{w})$ 是 $(n+1)$ 维空间里的"碗"。水平切片 = $n$ 维椭球（hyperellipsoid）</li>
+    </ul>
+  </details>
+
+  <details>
     <summary>为什么真实数据的等高线常常是扁椭圆？（实战陷阱）</summary>
     <p>这是优化里一个真实问题，叫"<strong>条件数</strong>"（ill-conditioning）。看看房价数据的实际曲率：</p>
     <ul>
@@ -830,6 +874,13 @@
     </ul>
     <p>梯度下降在这种情况下会"<strong>之字形震荡</strong>"——快速跨过狭窄方向，缓慢爬行长方向，整体收敛慢。这就是为什么 4.4 节默认 lr 必须很小（0.00005）：太大了在 $w$ 方向就发散。</p>
     <p><strong>实战解决办法：特征标准化</strong>。每个特征都减均值除标准差，让所有特征都在相近的数值范围（比如均值 0、标准差 1）。标准化之后等高线接近圆，梯度下降收敛快得多。这是真实 ML 项目的<strong>必备预处理步骤</strong>。</p>
+
+    <p><strong>看一眼之字形长什么样</strong>。设损失 $L(x, y) = \frac{x^2}{100} + y^2$（等高线是 10:1 扁椭圆，长轴沿 $x$）。从 $(10, 1)$ 出发用 $\eta = 1.0$ 走 vanilla GD：</p>
+
+    <svg id="plot-zigzag" viewBox="0 0 700 240"></svg>
+
+    <p class="meta">蓝色实线 = GD 实际轨迹：每步几乎只在 $y$ 方向震荡（短轴坡陡，梯度被绑架），$x$ 方向每步只前进 ≈ 0.2。8 步后离碗底仍很远。<br>
+    绿色虚线 = 起点到碗底的直线，距离仅 $\sqrt{101} \approx 10.05$。若能直接走直线、同样步长 6 步就到 —— 但 vanilla GD 不会走，因为<strong>"梯度方向（垂直局部等高线）" ≠ "指向碗底方向"</strong>。两者只在椭圆退化为圆时重合，这正是特征标准化的几何意义。</p>
   </details>
 
   <div class="warn">
@@ -857,6 +908,33 @@
 
   <h3>5.2 Batch Size（批量大小）</h3>
   <p>每次更新参数用多少个样本计算梯度。</p>
+
+  <h4>"批次"到底是什么</h4>
+  <p>数据集有 $N$ 条样本（比如 1000 套房子）。你<em>不一定每次更新参数都用全部 $N$ 条</em>算梯度，可以每次只用其中 $B$ 条。这 $B$ 条 = 一个 <strong>batch（"批"）</strong>，$B$ = <strong>batch size（批大小）</strong>。</p>
+
+  <p><strong>为什么不每次都用全部</strong>？大数据场景下（$N$ 上万 / 上百万）：</p>
+  <ul>
+    <li>(a) 每次扫全数据集太慢</li>
+    <li>(b) 内存放不下（如训练 ImageNet 时 N = 1.4M 张图）</li>
+    <li>(c) 全梯度信息冗余 —— 抽 $B$ 条样本算出的"梯度估计" 已经够接近真梯度</li>
+  </ul>
+
+  <h4>实际操作流程（每个 epoch 内重复一次）</h4>
+  <pre><code>① 打乱（shuffle）：把 N 条样本顺序随机重排
+                ↑ 关键！防止每个 epoch 都按同样顺序看数据
+② 切批：分成 N/B 个 batch（每批 B 条）
+                B₁ = 前 B 条
+                B₂ = 接下来 B 条
+                ...
+                B_{N/B} = 最后 B 条
+③ 循环每个 batch：
+                ┌─ 用这 B 条样本算梯度 g
+                └─ 更新一次参数：w ← w − η · g
+④ 一个 epoch 结束 → 参数被更新了 N/B 次
+</code></pre>
+
+  <p class="meta">⚙️ 关键点：一个 epoch 内参数被更新 <strong>$N/B$ 次</strong>，不是 1 次。batch 越小、每 epoch 内参数被搓得越频繁；batch 越大、每次方向越准但更新越少。下面三档就是这个折中的极端值和实际选择：</p>
+
   <table>
     <tr><th>类型</th><th>每次用多少</th><th>特点</th></tr>
     <tr><td>批量梯度下降 (BGD)</td><td>全部 n 个</td><td>准确但慢、内存开销大</td></tr>
@@ -880,6 +958,15 @@
 
   <h3>5.3 Epoch（轮次）</h3>
   <p>整个数据集被完整过一遍叫 1 个 epoch。训练通常要好几个 epoch。</p>
+
+  <div class="why">
+    <strong>为什么需要多个 epoch？1 次不够吗</strong>？常见误解："BGD 既然每步都用了全部 $N$ 条样本算精确梯度，应该 1 步到位 / 1 个 epoch 就完事。" 实际不是。<br><br>
+    <strong>梯度下降的一步永远只走 $\eta \cdot \|\nabla L\|$ 远，不是"跳到最优点"</strong>。梯度告诉你"该往哪走"，不告诉你"目标在哪"。就像蒙眼下山：每步只能感受脚下坡度（梯度），朝下坡迈一小段；走完再感受、再迈，要很多步才能到谷底。<strong>用全数据只让方向最准，不让单步距离变长。</strong><br><br>
+    <strong>BGD、SGD、Mini-batch 都需要多次迭代</strong>，原因相同。SGD 还多一层：单步用 1 个样本算的梯度是真梯度的<em>噪声估计</em>，方向本身就不准 → 更需要多步用噪声平均换稳定。<br><br>
+    那为什么不直接用闭式解一步求出？线性回归确实有 $\mathbf{w}^* = (X^\top X)^{-1} X^\top \mathbf{y}$，理论上 1 行 numpy 解决。但 (a) $N$ 或参数维度 $d$ 大时算 $(X^\top X)^{-1}$ 开销 $O(d^3)$ 爆炸、内存装不下；(b) 一旦换成逻辑回归、神经网络就没闭式解了。所以工业界统一用迭代式 GD，<strong>多 epoch 是通用框架的必然代价</strong>，不是 BGD 的设计缺陷。
+  </div>
+
+  <p>但 epoch 也不是越多越好：</p>
   <ul>
     <li>太少：欠拟合（还没学好就停了）</li>
     <li>太多：过拟合（开始记住训练集里的噪声）</li>
@@ -902,10 +989,10 @@
   <h2>⑥ 互动练习：感受不同学习率</h2>
   <p>试着设不同的学习率，观察损失曲线长什么样：</p>
   <div class="controls">
-    <button data-lr="0.00001">η = 0.00001（太小）</button>
-    <button data-lr="0.0005">η = 0.0005（合适）</button>
-    <button data-lr="0.002">η = 0.002（偏大）</button>
-    <button data-lr="0.005">η = 0.005（太大）</button>
+    <button data-lr="0.000001">η = 1e-6（太小）</button>
+    <button data-lr="0.00001">η = 1e-5（合适）</button>
+    <button data-lr="0.0001">η = 1e-4（偏大，接近临界）</button>
+    <button data-lr="0.001">η = 1e-3（太大，爆炸）</button>
     <button id="ex2-reset" class="secondary">重置</button>
   </div>
   <svg id="plot-ex2" viewBox="0 0 640 320"></svg>
@@ -1510,14 +1597,14 @@ function ex2Run(lr) {
 function ex2Draw() {
   const svg = document.getElementById("plot-ex2");
   clear(svg);
-  const ax = makeAxes(svg, {xMin:0, xMax:200, yMin:1, yMax:6, w:640, h:320,
-    m:{l:60,r:20,t:20,b:40}, xTicks:[0,50,100,150,200], yTicks:[1,2,3,4,5,6],
+  const ax = makeAxes(svg, {xMin:0, xMax:200, yMin:1, yMax:8, w:640, h:320,
+    m:{l:60,r:20,t:20,b:40}, xTicks:[0,50,100,150,200], yTicks:[1,2,4,6,8],
     xLabel:"迭代步数", yLabel:"log10(MSE)",
     yTickFmt:(t)=>`10^${t}`});
-  const colors = {"0.00001":"#94a3b8", "0.0005":"#16a34a", "0.002":"#ca8a04", "0.005":"#dc2626"};
+  const colors = {"0.000001":"#94a3b8", "0.00001":"#16a34a", "0.0001":"#ca8a04", "0.001":"#dc2626"};
   for (const { lr, history } of ex2Series) {
     const d = history.map((p, i) => (i===0?"M":"L") + ax.xPx(p[0]).toFixed(2) + "," +
-      ax.yPx(Math.min(Math.max(Math.log10(Math.max(p[1], 1)), 1), 6)).toFixed(2)).join(" ");
+      ax.yPx(Math.min(Math.max(Math.log10(Math.max(p[1], 1)), 1), 8)).toFixed(2)).join(" ");
     svg.appendChild(svgEl("path", {d, stroke:colors[lr], "stroke-width":2.4, fill:"none"}));
     lbl(svg, 580, 30 + Object.keys(colors).indexOf(lr)*16, `η=${lr}`, colors[lr], 12);
   }
@@ -1771,6 +1858,65 @@ ex2Draw();
 
   // 重画边框
   svg.appendChild(svgEl("rect", {x:60, y:25, width:640-60-20, height:400-25-42, fill:"none", stroke:"#cbd5e1", "stroke-width":1}));
+})();
+
+// =========== 4.6 扁椭圆 zigzag 可视化 ===========
+(function(){
+  const svg = document.getElementById("plot-zigzag");
+  if (!svg) return;
+  // 损失 L(x,y) = x²/100 + y²，长轴沿 x（半轴 10），短轴沿 y（半轴 1），扁度 10:1
+  const ax = makeAxes(svg, {xMin:-2, xMax:12, yMin:-2, yMax:2, w:700, h:240,
+    m:{l:55,r:20,t:30,b:40}, xTicks:[0,2,4,6,8,10,12], yTicks:[-2,-1,0,1,2],
+    xLabel:"x（长轴方向）", yLabel:"y（短轴方向）",
+    title:"扁椭圆下 GD 之字形 vs 直线最短路径（η=1.0）"});
+
+  // 画椭圆等高线 L = c, 即 x²/100 + y² = c
+  const levels = [0.25, 0.5, 1, 1.5, 2];
+  for (const c of levels) {
+    const pts = [];
+    for (let t = 0; t <= 2*Math.PI + 0.05; t += 0.04) {
+      const x = 10 * Math.sqrt(c) * Math.cos(t);
+      const y = Math.sqrt(c) * Math.sin(t);
+      pts.push(ax.xPx(x).toFixed(2) + "," + ax.yPx(y).toFixed(2));
+    }
+    svg.appendChild(svgEl("path", {
+      d: "M" + pts.join(" L") + "Z",
+      stroke: "#dc2626", fill: "none", "stroke-width": 1.2, opacity: 0.4
+    }));
+  }
+
+  // 理想直线（起点 → 碗底），先画在底层
+  svg.appendChild(svgEl("path", {
+    d: "M" + ax.xPx(10).toFixed(2) + "," + ax.yPx(1).toFixed(2) +
+       " L" + ax.xPx(0).toFixed(2) + "," + ax.yPx(0).toFixed(2),
+    stroke:"#16a34a", "stroke-width":2.2, "stroke-dasharray":"6,4", fill:"none"
+  }));
+
+  // GD zigzag 轨迹
+  let x = 10, y = 1;
+  const path = [[x, y]];
+  for (let i = 0; i < 8; i++) {
+    const gx = 2*x/100, gy = 2*y;
+    x -= 1.0 * gx; y -= 1.0 * gy;
+    path.push([x, y]);
+  }
+  const d = path.map((p, i) => (i===0?"M":"L") + ax.xPx(p[0]).toFixed(2) + "," + ax.yPx(p[1]).toFixed(2)).join(" ");
+  svg.appendChild(svgEl("path", {d, stroke:"#1d4ed8", "stroke-width":2.2, fill:"none"}));
+  for (let i = 0; i < path.length; i++) {
+    dot(svg, ax.xPx(path[i][0]), ax.yPx(path[i][1]), "#1d4ed8", 4);
+  }
+
+  // 起点和碗底标记
+  dot(svg, ax.xPx(10), ax.yPx(1), "#854d0e", 6);
+  lbl(svg, ax.xPx(10) - 60, ax.yPx(1) - 10, "起点 (10, 1)", "#854d0e", 12);
+  svg.appendChild(svgEl("text", {x: ax.xPx(0), y: ax.yPx(0) + 6, "text-anchor":"middle",
+    "font-size":20, fill:"#16a34a", "font-weight":"bold"}, "★"));
+  lbl(svg, ax.xPx(0) + 8, ax.yPx(0) + 20, "碗底 (0, 0)", "#16a34a", 12);
+
+  // 图例
+  lbl(svg, 500, 50, "— GD 之字形", "#1d4ed8", 12);
+  lbl(svg, 500, 68, "·· 理想直线", "#16a34a", 12);
+  lbl(svg, 500, 86, "— 椭圆等高线", "#dc2626", 12);
 })();
 
 // =========== 高斯分布 PDF ===========
