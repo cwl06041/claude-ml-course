@@ -285,6 +285,13 @@
   <h3>0.5 向量与内积：多元情况的简洁写法</h3>
   <p>有 $d$ 个特征时，写 $w_1 x_1 + w_2 x_2 + \cdots + w_d x_d + b$ 太啰嗦。用向量：</p>
   <p>$$\mathbf{w} = \begin{pmatrix} w_1 \\ w_2 \\ \vdots \\ w_d \end{pmatrix}, \quad \mathbf{x} = \begin{pmatrix} x_1 \\ x_2 \\ \vdots \\ x_d \end{pmatrix}$$</p>
+
+  <p><strong>约定（重要）</strong>：本文档里所有向量默认是<strong>列向量</strong>（竖着排，相当于 $d \times 1$ 矩阵）。<strong>转置</strong>符号 $^\top$ 把列向量"放倒"，变成<strong>行向量</strong>（横着排，$1 \times d$）：</p>
+  <p>$$\mathbf{w}^\top = (w_1,\ w_2,\ \ldots,\ w_d)$$</p>
+
+  <p>为什么内积要写成 $\mathbf{w}^\top \mathbf{x}$ 而不是 $\mathbf{w}\mathbf{x}$？矩阵乘法要求<em>左边列数 = 右边行数</em>。两个列向量直接乘 $(d \times 1) \times (d \times 1)$ 形状接不上；先把 $\mathbf{w}$ 转置成 $(1 \times d)$，再乘 $\mathbf{x}$ 的 $(d \times 1)$，结果就是 $1 \times 1$（一个数）：</p>
+  <p>$$\underbrace{(w_1, \ldots, w_d)}_{1 \times d} \cdot \underbrace{\begin{pmatrix} x_1 \\ \vdots \\ x_d \end{pmatrix}}_{d \times 1} = w_1 x_1 + \cdots + w_d x_d \quad(\text{一个数})$$</p>
+
   <p><strong>内积</strong>（也叫点积）：$\mathbf{w}^\top \mathbf{x} = \sum_i w_i x_i$。所以模型可以紧凑地写成：</p>
   <p>$$\hat{y} = \mathbf{w}^\top \mathbf{x} + b$$</p>
   <div class="why">这是为了少打字、少出错，本质和写出来的一长串完全一样。看到 $\mathbf{w}^\top\mathbf{x}$ 就是"对应位置相乘再相加"。</div>
