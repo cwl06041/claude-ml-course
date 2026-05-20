@@ -204,6 +204,7 @@
 
 <div class="toc">
   <span class="toc-title">目录</span>
+  <a href="#prep">⓪ 数学预热</a>
   <a href="#intro">① 简介</a>
   <a href="#prob">② 计算概率</a>
   <a href="#loss">③ 损失和正则化</a>
@@ -211,6 +212,42 @@
   <a href="#quiz">⑤ 测试</a>
   <a href="#next">⑥ 后续</a>
 </div>
+
+<!-- ===================== 0 数学预热 ===================== -->
+<section id="prep" class="card">
+  <h2>⓪ 数学预热</h2>
+  <p>这节集中梳理后面 ③ 节"对数损失推导"会用到的几个概率与对数概念。已经熟悉的可以跳过；推导时遇到陌生符号再回来查。</p>
+
+  <h3>0.1 条件概率 $P(y \mid x)$</h3>
+  <p>竖线"$\mid$"念作 <strong>"在……条件下"</strong>。$P(y \mid x)$ 表示<strong>"已知输入是 $x$ 的前提下，标签为 $y$ 的概率"</strong>。</p>
+  <p>例子（学生考试场景）：</p>
+  <ul>
+    <li>$P(y = 1 \mid x = 4)$ = "学习了 4 小时的学生通过考试的概率"</li>
+    <li>$P(y = 0 \mid x = 4)$ = "学习了 4 小时的学生没通过的概率"</li>
+  </ul>
+  <p>因为只有两种结果，这两个加起来 = 1。逻辑回归模型直接给出第一个：</p>
+  <p>$$P(y = 1 \mid x) = p = \sigma(wx + b), \qquad P(y = 0 \mid x) = 1 - p$$</p>
+  <p>注意 $p$ 不是常数 —— 它依赖输入 $x$，也依赖参数 $(w, b)$。换不同的参数，每个 $x$ 对应的 $p$ 就变了。</p>
+
+  <h3>0.2 独立事件的总概率 = 各自概率相乘</h3>
+  <p>高中概率知识：若干<strong>相互独立</strong>的事件"全都发生"的概率 = 各自概率相乘。</p>
+  <p>例子：抛 3 次公平硬币全是正面，概率 = $0.5 \times 0.5 \times 0.5 = 0.125$。</p>
+  <p>机器学习里我们假设训练样本是<strong>独立抽出来的</strong>（标准假设）。所以"全部 $n$ 个观测都按真实标签出现"的总概率 = 每条样本各自概率的连乘：</p>
+  <p>$$P(\text{全部数据}) = P(y_1 \mid x_1) \cdot P(y_2 \mid x_2) \cdots P(y_n \mid x_n) = \prod_{i=1}^{n} P(y_i \mid x_i)$$</p>
+  <p>大写希腊字母 $\prod$（读 product）就是"连乘"号，跟 $\sum$（求和）是一对。</p>
+
+  <h3>0.3 对数的两个核心性质</h3>
+  <p>记号 $\ln$（自然对数）= 以 $e \approx 2.718$ 为底的对数。后面推导用到对数的两条性质：</p>
+
+  <p><strong>性质 1（积变和）</strong>：</p>
+  <p>$$\ln(a \cdot b) = \ln a + \ln b, \qquad \ln(a^k) = k \ln a$$</p>
+  <p>对一长串连乘取 $\ln$ 就变成连加：$\ln \prod_i x_i = \sum_i \ln x_i$。这就是为什么似然取 log —— <strong>把难算的连乘转成好算的连加</strong>。</p>
+
+  <p><strong>性质 2（单调递增）</strong>：$a > b > 0 \implies \ln a > \ln b$。</p>
+  <p>所以"让 $f(x)$ 最大的 $x$" 和 "让 $\ln f(x)$ 最大的 $x$" 是<strong>同一个 $x$</strong>。换句话说，<strong>取 log 不改变最优解</strong>，只改变中间运算。</p>
+
+  <div class="why">这两条性质合起来让 MLE 的推导可行：连乘对求导太麻烦、对计算机也容易下溢（很多小数相乘 → 接近 0 → 算不准），而取 $\ln$ 之后变成连加，求导轻松、数值稳定，且最优解不变。</div>
+</section>
 
 <!-- ===================== 1 简介 ===================== -->
 <section id="intro" class="card">
@@ -417,17 +454,75 @@
 <section id="loss" class="card">
   <h2>③ 损失和正则化</h2>
 
+  <h3>3.0 写损失之前：连续概率 vs 离散标签</h3>
+  <p>正式定义损失之前，先把一个核心差别讲清楚 —— 这是逻辑回归和线性回归在概念上最根本的分歧。</p>
+
+  <p><strong>两边类型不一样：</strong></p>
+  <table>
+    <tr><th>量</th><th>类型</th><th>取值</th><th>例子</th></tr>
+    <tr><td>真实标签 $y$</td><td><strong>离散</strong></td><td>只能是 $0$ 或 $1$</td><td>$1$（学生通过了考试）</td></tr>
+    <tr><td>模型预测 $p$</td><td><strong>连续</strong></td><td>$(0, 1)$ 间任意实数</td><td>$0.73$（模型猜"73% 像通过"）</td></tr>
+  </table>
+
+  <p>线性回归里没这个问题 —— $\hat y$ 和 $y$ 都是连续值（都是房价），直接做差就有"距离"的物理意义。而在逻辑回归里，连续的 $p$ 和离散的 $y$ <strong>不在同一把尺子上</strong>，没法直接说"差多远"。我们需要一个翻译器，把它们对齐到同一个标量（损失值）。<strong>损失函数的本职工作就是当这个翻译器。</strong></p>
+
+  <h4>为什么不直接把 $p$ 也压成 0 或 1？</h4>
+  <p>那样确实类型对齐了，但 $p$ 一旦被压成 0/1 就<strong>求不了导</strong>（阶跃函数到处导数为 0 或不存在）→ 梯度下降没法 work。所以策略反过来：<strong>保留 $p$ 的连续性，让损失函数承担"拉近连续 $p$ 和离散 $y$"的责任</strong>。</p>
+
+  <h4>两个阶段，$p$ 扮演不同角色</h4>
+  <table>
+    <tr><th>阶段</th><th>$p$ 怎么用</th><th>是否阈值化</th></tr>
+    <tr><td><strong>训练</strong>（算 loss、求梯度）</td><td>保持连续</td><td>❌ 必须保留 $(0,1)$ 实数</td></tr>
+    <tr><td><strong>预测</strong>（输出最终判断）</td><td>卡 0.5 阈值（$&gt;0.5$ 判 1）</td><td>✅ 此时才压成 0/1</td></tr>
+  </table>
+  <p>训练时 $p$ 必须连续，否则梯度不存在；预测时才阈值化。所以训练目标其实是 <strong>"让 $p$ 在 $y=1$ 的样本上往 1 靠，在 $y=0$ 的样本上往 0 靠"</strong> —— 损失函数就是衡量"靠得有多近"的那把尺子。</p>
+
+  <div class="why">下面 3.1 和 3.2 会看到两个候选翻译器（MSE 和对数损失）。两个都"能用"，区别是<strong>哪一个翻译得让 GD 学得动</strong>。</div>
+
   <h3>3.1 为什么不能用 MSE？</h3>
   <p>有了模型 $p = \sigma(z)$，自然的想法是延续线性回归的平方损失：$L = (p - y)^2$。但有两个数学灾难：</p>
 
-  <h4>灾难 1：损失非凸 → 卡局部极小</h4>
-  <p>线性回归的 MSE 损失关于 $(w, b)$ 是凸函数（碗形，只有一个最低点）。但 $\sigma$ 是非线性的，外面再套一个平方，损失会出现<strong>多个局部极小</strong>，梯度下降可能卡住。</p>
+  <h4>灾难 1：损失面不是碗形 → 有大片平坦区</h4>
+  <p>线性回归的 MSE 关于 $(w, b)$ 是凸函数（碗形）。但 $\sigma$ 是非线性的，外面再套一个平方后，损失面被"压扁"成两端平坦、中间陡的形状 —— 不是碗。下图蓝线是单样本 $(y=1, x=1)$ 下 MSE 关于 $w$ 的曲线：</p>
   <svg id="plot-nonconvex" viewBox="0 0 640 280"></svg>
+  <p>左半边几乎是水平线 —— 这片"平台"上梯度接近 0，参数更新几乎为零。梯度下降一旦初始化在这里就动弹不得。红色虚线是对数损失（下一节会讲），左侧陡峭、梯度大，能把参数推回正确方向。</p>
 
-  <h4>灾难 2：梯度消失 → 学不动</h4>
-  <p>对 MSE+sigmoid 求梯度（链式法则）：</p>
-  <p>$$\frac{\partial L}{\partial w} = (p - y) \cdot \underbrace{\sigma'(z)}_{= p(1-p)} \cdot x$$</p>
-  <p>那个 $p(1-p)$ 在 sigmoid 两端非常小：</p>
+  <h4>灾难 2：梯度消失 → 自信地错时反而学不动</h4>
+  <p>上面"平台"现象的根源，从梯度公式能看出来。对 MSE+sigmoid 求 $w$ 的偏导（链式法则）：</p>
+  <p>$$\frac{\partial L}{\partial w} = \underbrace{(p - y)}_{\text{误差}} \cdot \underbrace{\sigma'(z)}_{= p(1-p)} \cdot x$$</p>
+
+  <details>
+    <summary>这个梯度是怎么求出来的？（链式法则三步）</summary>
+    <p>把 $L$ 一层层拆开：</p>
+    <ul>
+      <li>$L = (p-y)^2$ —— 损失是 $p$ 的函数</li>
+      <li>$p = \sigma(z)$ —— $p$ 是 $z$ 的函数</li>
+      <li>$z = wx + b$ —— $z$ 是 $w$ 的函数</li>
+    </ul>
+    <p>$L$ 依赖 $p$，$p$ 依赖 $z$，$z$ 依赖 $w$。链式法则把每一步的导数串起来：</p>
+    <p>$$\frac{\partial L}{\partial w} = \underbrace{\frac{\partial L}{\partial p}}_{①} \cdot \underbrace{\frac{\partial p}{\partial z}}_{②} \cdot \underbrace{\frac{\partial z}{\partial w}}_{③}$$</p>
+    <ul>
+      <li>①：$L = (p-y)^2$ 对 $p$ 求导 → $2(p-y)$</li>
+      <li>②：$p = \sigma(z)$ 对 $z$ 求导 → $\sigma'(z) = p(1-p)$（上面刚证过）</li>
+      <li>③：$z = wx + b$ 对 $w$ 求导 → $x$</li>
+    </ul>
+    <p>三个乘起来：</p>
+    <p>$$\frac{\partial L}{\partial w} = 2(p-y) \cdot p(1-p) \cdot x$$</p>
+    <p><strong>那 2 去哪了？</strong> 正文公式里把常数 2 省掉了。理由是 2 可以并入学习率（把 lr 看成 "2×lr" 就行），不改变梯度方向，也不影响"梯度是否接近 0"的判断，所以教科书习惯简写成 $(p-y) \cdot p(1-p) \cdot x$。如果想让公式严格干净，常见做法是把损失定义为 $L = \frac{1}{2}(p-y)^2$ —— 这个 $\frac{1}{2}$ 就是为了求导后把 2 抵消。</p>
+  </details>
+
+  <p><strong>第一个因子 $(p-y)$</strong> 是误差，错得越离谱越大，这没问题。<strong>第二个因子 $\sigma'(z) = p(1-p)$</strong> 是 sigmoid 的导数 —— 注意它恰好可以写成 $p$ 和 $1-p$ 的乘积。这个因子才是问题所在。</p>
+
+  <details>
+    <summary>顺手看一下 $\sigma'(z) = p(1-p)$ 是怎么来的（可选）</summary>
+    <p>$\sigma(z) = \dfrac{1}{1+e^{-z}}$，对 $z$ 求导：</p>
+    <p>$$\sigma'(z) = \frac{e^{-z}}{(1+e^{-z})^2} = \frac{1}{1+e^{-z}} \cdot \frac{e^{-z}}{1+e^{-z}} = \sigma(z)\cdot(1-\sigma(z)) = p(1-p)$$</p>
+  </details>
+
+  <p><strong>$p(1-p)$ 长什么样</strong>：它是一条倒 U 形抛物线 —— 在 $p=0.5$ 处取得最大值 0.25，在 $p=0$ 或 $p=1$（也就是 sigmoid 两端饱和的地方）跌到 0：</p>
+  <svg id="plot-p1mp" viewBox="0 0 640 240"></svg>
+
+  <p>具体数值：</p>
   <table>
     <tr><th>p</th><th>p(1-p)</th><th>梯度规模</th></tr>
     <tr><td>0.5</td><td>0.25</td><td>正常</td></tr>
@@ -435,7 +530,10 @@
     <tr><td>0.99</td><td>0.0099</td><td>已经很小</td></tr>
     <tr class="hl"><td>0.001（自信预测错的极端）</td><td>0.000999</td><td><strong>梯度几乎为 0</strong></td></tr>
   </table>
-  <div class="warn">最糟的情况：模型自信地预测错（真实 y=1 但 p=0.001），本应狠狠惩罚，结果梯度几乎为零，<strong>错得最离谱时反而学不动</strong>。这就是"梯度消失"。</div>
+
+  <p><strong>为什么"小"会出事</strong>：梯度下降每一步的更新量是 $\Delta w = -\text{lr} \cdot \dfrac{\partial L}{\partial w}$。梯度 ≈ 0 → 更新 ≈ 0 → 参数几乎不动 → 学不动。</p>
+
+  <div class="warn">最糟的情况：模型自信地预测错（真实 $y=1$ 但 $p=0.001$）。误差因子 $(p-y) = -0.999$ 很大，本该狠狠惩罚；但 $p(1-p) \approx 0.001$ 几乎为零，两者相乘梯度还是 ≈ 0。<strong>错得最离谱时反而最学不动</strong> —— 这就是"梯度消失"。</div>
 
   <h3>3.2 对数损失（Log Loss / Cross-Entropy）</h3>
   <p>正确的损失函数：</p>
@@ -447,18 +545,54 @@
   </ul>
 
   <h4>它是怎么推出来的？最大似然估计 (MLE)</h4>
+
+  <p><strong>核心思想（一句话）</strong>：找一组 $(w, b)$，让模型对训练数据中真实标签的"信心"加起来最大 —— 也就是让"模型生成这批观测数据"的概率最高。这种思路叫<strong>最大似然估计</strong>（Maximum Likelihood Estimation，MLE）。对数损失不是凭空设计的"惩罚函数"，而是从 MLE 推出来的<strong>副产品</strong>。</p>
+
+  <p>预备知识在 <a href="#prep" style="color:#2563eb">⓪ 数学预热</a>（条件概率、独立相乘、对数性质）。下面推导每一步都会标出引用了哪条。</p>
+
   <details>
-    <summary>展开看完整推导（三步）</summary>
-    <p><strong>Step 1</strong>：把 $P(y|x)$ 写成统一形式。伯努利分布：$P(y \mid x) = p^y (1-p)^{1-y}$</p>
-    <ul>
-      <li>y=1 代入 → $p^1 (1-p)^0 = p$ ✓</li>
-      <li>y=0 代入 → $p^0 (1-p)^1 = 1-p$ ✓</li>
-    </ul>
-    <p><strong>Step 2</strong>：n 个样本独立，联合概率 = 各概率相乘（似然）：</p>
-    <p>$$\mathcal{L}(\mathbf{w}, b) = \prod_{i=1}^{n} p_i^{y_i}(1-p_i)^{1-y_i}$$</p>
-    <p><strong>Step 3</strong>：取对数变连加，再取负（最大化等价于最小化负号）：</p>
-    <p>$$L = -\sum_{i=1}^{n}\big[\,y_i \ln p_i + (1-y_i)\ln(1-p_i)\,\big]$$</p>
-    <p>这就是对数损失。<strong>log 不是"为了惩罚大错"故意加的，而是把连乘转成连加自然出现的</strong>。</p>
+    <summary>展开看完整推导（六步）</summary>
+
+    <p><strong>Step 1：写出单样本的条件概率</strong>（用 ⓪.1）</p>
+    <p>模型对每个样本输出概率 $p = \sigma(wx+b)$。所以：</p>
+    <p>$$P(y = 1 \mid x) = p, \qquad P(y = 0 \mid x) = 1 - p$$</p>
+
+    <p><strong>Step 2：用 $y$ 当指数开关，把两条合成一条</strong></p>
+    <p>上面要分两段写很啰嗦。利用 $y$ 只能取 0 或 1，可以用一个数学小把戏写成一行：</p>
+    <p>$$P(y \mid x) = p^y \cdot (1-p)^{1-y}$$</p>
+    <p>验证它和原来两条等价：</p>
+    <table>
+      <tr><th>$y$ 代入</th><th>化简</th><th>对应原式</th></tr>
+      <tr><td>$y = 1$</td><td>$p^1 \cdot (1-p)^0 = p \cdot 1 = p$</td><td>$= P(y=1 \mid x)$ ✓</td></tr>
+      <tr><td>$y = 0$</td><td>$p^0 \cdot (1-p)^1 = 1 \cdot (1-p) = 1-p$</td><td>$= P(y=0 \mid x)$ ✓</td></tr>
+    </table>
+    <p>关键观察：$y$ 和 $1-y$ <strong>充当指数开关</strong>—— 哪一项"打开"取决于 $y$ 是 0 还是 1。这个式子叫<strong>伯努利分布</strong>的概率函数（名字不用记，懂这个开关结构就行）。好处是后面公式可以一行写完，不用分情况讨论。</p>
+
+    <p><strong>Step 3：n 个样本独立 → 总概率 = 各自相乘（似然函数）</strong>（用 ⓪.2）</p>
+    <p>训练样本独立抽样，"全部 $n$ 个观测都按真实标签出现"的总概率：</p>
+    <p>$$\mathcal{L}(w, b) = \prod_{i=1}^{n} P(y_i \mid x_i) = \prod_{i=1}^{n} p_i^{y_i}(1-p_i)^{1-y_i}$$</p>
+    <p>这个 $\mathcal{L}$ 就叫<strong>似然函数</strong>（likelihood）。注意它是<strong>关于 $(w, b)$ 的函数</strong> —— 数据 $x_i, y_i$ 是固定的训练集，$p_i = \sigma(wx_i + b)$ 随 $(w, b)$ 变。</p>
+    <p>MLE 的目标：<strong>找让 $\mathcal{L}$ 最大的那组 $(w, b)$</strong>。直觉上就是"哪组参数最能解释训练数据"。</p>
+
+    <p><strong>Step 4：取对数，把连乘变连加</strong>（用 ⓪.3 性质 1）</p>
+    <p>连乘有两个问题：(a) 数值上很多小数相乘会下溢成 0；(b) 数学上乘法不好求导。<br>解法：取 $\ln$ 之后<strong>积变和</strong>，再用 $\ln(a^k) = k\ln a$ 把指数拉下来：</p>
+    <p>$$\ln \mathcal{L} = \sum_{i=1}^{n} \ln\big[p_i^{y_i}(1-p_i)^{1-y_i}\big] = \sum_{i=1}^{n}\big[y_i \ln p_i + (1-y_i)\ln(1-p_i)\big]$$</p>
+    <p><strong>这一步没改变最优解</strong>：因为 $\ln$ 单调递增（⓪.3 性质 2），让 $\mathcal{L}$ 最大的 $(w, b)$ 同时也让 $\ln \mathcal{L}$ 最大。</p>
+
+    <p><strong>Step 5：取负号，把"最大化"翻成"最小化"</strong></p>
+    <p>我们整个机器学习的优化框架都是"<strong>最小化损失</strong>"。但 MLE 是"最大化似然"，方向反过来。加个负号就把它转成最小化：</p>
+    <p>$$L(w, b) = -\ln \mathcal{L} = -\sum_{i=1}^{n}\big[y_i \ln p_i + (1-y_i)\ln(1-p_i)\big]$$</p>
+    <p>这就叫<strong>负对数似然</strong>（Negative Log Likelihood, NLL），也就是<strong>对数损失</strong>。"最大化似然"和"最小化对数损失"是同一回事，只是符号反一下。</p>
+
+    <p><strong>Step 6：单样本形式 = 课程主公式</strong></p>
+    <p>把 $n=1$（看单条样本的损失贡献）写出来：</p>
+    <p>$$L = -\big[\,y \ln p + (1-y) \ln(1-p)\,\big]$$</p>
+    <p>这就是 3.2 一开始那个公式。整套推导走完了。</p>
+
+    <div class="why">
+      <strong>整条链关键观点</strong>：log 不是"为了惩罚大错"故意加的，而是为了把连乘转成连加自然出现的；$y$ 当指数开关也不是凑出来的写法，而是伯努利分布的标准形式。对数损失是 MLE 推导的<strong>副产品</strong>，不是设计目标。<br>
+      跟线性回归 MSE 的"对应高斯噪声 MLE"是<strong>完全平行</strong>的故事：那边假设噪声是正态分布、MLE 推出平方损失；这边假设标签服从伯努利分布、MLE 推出对数损失。两个损失都<strong>有统计学根基</strong>。
+    </div>
   </details>
 
   <h4>对数损失的两个优良性质</h4>
@@ -1054,6 +1188,22 @@ draw2D("plot-2d-boundary", 0.8, 0.6, -7);
   // 标注: MSE 曲线有"平台"区, 形状不像碗
   lbl(svg, ax.xPx(-5), ax.yPx(0.95), "MSE: 左半边非常平坦 → 梯度消失 → 学不动", "#1e40af", 12);
   lbl(svg, ax.xPx(-5), ax.yPx(0.78), "log loss: 左侧陡峭 → 大梯度 → 学得动", "#b91c1c", 12);
+})();
+
+// =========== 3.1 p(1-p) 形状 ===========
+(function(){
+  const svg = document.getElementById("plot-p1mp");
+  const ax = makeAxes(svg, {xMin:0, xMax:1, yMin:0, yMax:0.3, w:640, h:240,
+    m:{l:50,r:20,t:20,b:40}, xTicks:[0,0.25,0.5,0.75,1], yTicks:[0,0.1,0.2,0.3],
+    xLabel:"p (sigmoid 输出)", yLabel:"p(1-p)",
+    title:"σ'(z) = p(1-p)：两端为 0，中间最大 0.25"});
+  plotCurve(svg, p => p*(1-p), 0, 1, ax, "#7c3aed", 2.6);
+  dot(svg, ax.xPx(0.5), ax.yPx(0.25), "#7c3aed", 4);
+  lbl(svg, ax.xPx(0.5)+6, ax.yPx(0.25)-6, "(0.5, 0.25) 最大", "#6d28d9", 11);
+  dot(svg, ax.xPx(0.02), ax.yPx(0.02*0.98), "#dc2626", 3.5);
+  lbl(svg, ax.xPx(0.02)+6, ax.yPx(0.02*0.98)-6, "自信预测 0 → 近 0", "#b91c1c", 11);
+  dot(svg, ax.xPx(0.98), ax.yPx(0.98*0.02), "#dc2626", 3.5);
+  lbl(svg, ax.xPx(0.98)-120, ax.yPx(0.98*0.02)-6, "自信预测 1 → 近 0", "#b91c1c", 11);
 })();
 
 // =========== 3.2 log loss 爆炸 ===========
