@@ -488,8 +488,8 @@
   <p>左半边几乎是水平线 —— 这片"平台"上梯度接近 0，参数更新几乎为零。梯度下降一旦初始化在这里就动弹不得。红色虚线是对数损失（下一节会讲），左侧陡峭、梯度大，能把参数推回正确方向。</p>
 
   <h4>灾难 2：梯度消失 → 自信地错时反而学不动</h4>
-  <p>上面"平台"现象的根源，从梯度公式能看出来。对 MSE+sigmoid 求 $w$ 的偏导（链式法则）：</p>
-  <p>$$\frac{\partial L}{\partial w} = \underbrace{(p - y)}_{\text{误差}} \cdot \underbrace{\sigma'(z)}_{= p(1-p)} \cdot x$$</p>
+  <p>上面"平台"现象的根源，从梯度公式能看出来。对 MSE+sigmoid 求 $w$ 的偏导（链式法则；为了下一节对比，给 MSE 损失加下标记成 $L_\text{MSE} = (p-y)^2$）：</p>
+  <p>$$\frac{\partial L_\text{MSE}}{\partial w} = \underbrace{(p - y)}_{\text{误差}} \cdot \underbrace{\sigma'(z)}_{= p(1-p)} \cdot x$$</p>
 
   <details>
     <summary>这个梯度是怎么求出来的？（链式法则三步）</summary>
@@ -507,8 +507,8 @@
       <li>③：$z = wx + b$ 对 $w$ 求导 → $x$</li>
     </ul>
     <p>三个乘起来：</p>
-    <p>$$\frac{\partial L}{\partial w} = 2(p-y) \cdot p(1-p) \cdot x$$</p>
-    <p><strong>那 2 去哪了？</strong> 正文公式里把常数 2 省掉了。理由是 2 可以并入学习率（把 lr 看成 "2×lr" 就行），不改变梯度方向，也不影响"梯度是否接近 0"的判断，所以教科书习惯简写成 $(p-y) \cdot p(1-p) \cdot x$。如果想让公式严格干净，常见做法是把损失定义为 $L = \frac{1}{2}(p-y)^2$ —— 这个 $\frac{1}{2}$ 就是为了求导后把 2 抵消。</p>
+    <p>$$\frac{\partial L_\text{MSE}}{\partial w} = 2(p-y) \cdot p(1-p) \cdot x$$</p>
+    <p><strong>那 2 去哪了？</strong> 正文公式里把常数 2 省掉了。理由是 2 可以并入学习率（把 lr 看成 "2×lr" 就行），不改变梯度方向，也不影响"梯度是否接近 0"的判断，所以教科书习惯简写成 $(p-y) \cdot p(1-p) \cdot x$。如果想让公式严格干净，常见做法是把损失定义为 $L_\text{MSE} = \frac{1}{2}(p-y)^2$ —— 这个 $\frac{1}{2}$ 就是为了求导后把 2 抵消。</p>
   </details>
 
   <p><strong>第一个因子 $(p-y)$</strong> 是误差，错得越离谱越大，这没问题。<strong>第二个因子 $\sigma'(z) = p(1-p)$</strong> 是 sigmoid 的导数 —— 注意它恰好可以写成 $p$ 和 $1-p$ 的乘积。这个因子才是问题所在。</p>
@@ -609,8 +609,32 @@
   </table>
 
   <p><strong>性质 2：和 sigmoid 配，梯度异常干净</strong></p>
-  <p>$$\frac{\partial L}{\partial w} = (p - y) \cdot x$$</p>
+  <p>把刚刚那条对数损失记成 $L_\text{log} = -[y\ln p + (1-y)\ln(1-p)]$，对 $w$ 的偏导：</p>
+  <p>$$\frac{\partial L_\text{log}}{\partial w} = (p - y) \cdot x$$</p>
   <p>看，没有 $p(1-p)$ 因子了！它和 sigmoid 求导带来的 $p(1-p)$ 在数学上<strong>正好抵消</strong>了。</p>
+
+  <div class="why">
+    <strong>⚠️ 记号澄清</strong>：这条公式的左边 $\dfrac{\partial L_\text{log}}{\partial w}$ 和灾难 2 的 $\dfrac{\partial L_\text{MSE}}{\partial w}$ <strong>不是同一个 $L$</strong>。两边记号 $\partial L/\partial w$ 长得像，但 $L$ 换了一个函数（MSE → 对数损失），右边自然不一样。差别就发生在链式法则的第①步，下面展开。
+  </div>
+
+  <details>
+    <summary>具体差在哪一步？两种损失的链式法则并排对比</summary>
+    <p>同一套设定（$z = wx+b$，$p = \sigma(z)$）下，对两种损失各跑一遍 ① $\to$ ② $\to$ ③，每一段做了什么一目了然：</p>
+    <table>
+      <tr><th>步骤</th><th>MSE：$L_\text{MSE} = (p-y)^2$</th><th>对数损失：$L_\text{log} = -[y\ln p + (1-y)\ln(1-p)]$</th></tr>
+      <tr><td>① $\dfrac{\partial L}{\partial p}$</td><td>$2(p-y)$（多项式求导，<strong>无分母</strong>）</td><td>$\dfrac{p-y}{p(1-p)}$（$\ln$ 求导<strong>自带 $\frac{1}{p}$ 分母</strong>，通分后变这样）</td></tr>
+      <tr><td>② $\dfrac{\partial p}{\partial z}$</td><td>$p(1-p)$</td><td>$p(1-p)$</td></tr>
+      <tr><td>③ $\dfrac{\partial z}{\partial w}$</td><td>$x$</td><td>$x$</td></tr>
+      <tr class="hl"><td>三段相乘</td><td>$(p-y)\cdot \mathbf{p(1-p)}\cdot x$（<strong>残留</strong>）</td><td>$\dfrac{p-y}{\mathbf{p(1-p)}}\cdot \mathbf{p(1-p)}\cdot x = (p-y)\cdot x$（<strong>约掉</strong>）</td></tr>
+    </table>
+    <p><strong>关键看第①步</strong>：</p>
+    <ul>
+      <li>MSE 求导是普通多项式 → $2(p-y)$，干干净净没分母。sigmoid 求导贡献的 $p(1-p)$ 没东西配对，只能<strong>残留</strong> → $p$ 在 0 或 1 附近时整个梯度被压成 0 → 梯度消失。</li>
+      <li>$\ln$ 求导自带 $\frac{1}{p}$、$\frac{1}{1-p}$ → 通分后 $p(1-p)$ 跑到<strong>分母</strong>位置 → 和 sigmoid 求导的 $p(1-p)$ <strong>分子</strong>一上一下抵消。</li>
+    </ul>
+    <p class="meta">所以"对数损失 + sigmoid"这一对不是巧合 —— $\ln$ 的求导特性（分式结构）就是为接住 sigmoid 求导特性（$p(1-p)$ 分子）准备的。换成 MSE 没有这个分式结构，就接不住，于是 $p(1-p)$ 残留下来变成梯度消失。指数族 + 典范链接的统计学理论保证了这种配对必然出现。</p>
+  </details>
+
   <div class="link">
     回想线性回归的梯度是 $(\hat{y} - y) \cdot x$。逻辑回归的梯度长得<strong>一模一样</strong>，只是把 $\hat{y}$ 换成 $p$。这种统一性是"对数损失 + sigmoid"这一对刻意搭配的回报。
   </div>
