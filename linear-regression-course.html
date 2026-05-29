@@ -86,30 +86,32 @@
                             font-size: 13.5px; padding: 14px 16px; margin: 12px 0; }
   code:not([class*="language-"]) { background: var(--code-bg); padding: 2px 6px; border-radius: 4px;
          font-size: 0.9em; color: #b91c1c; }
-  /* 目录 —— 手机/平板：首屏概览的 2 列卡片网格，滚动后由右下 FAB 接管 */
+  /* 目录 —— 嵌套 h2 / h3 */
   .toc { background: var(--card); border: 1px solid var(--border);
          border-radius: 10px; padding: 14px 16px; margin-bottom: 24px;
-         box-shadow: 0 2px 8px rgba(0,0,0,.06);
-         display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px 10px; }
-  .toc-title { grid-column: 1 / -1; font-weight: 600; color: var(--muted);
-               margin: 0 0 2px; font-size: 12px;
-               text-transform: uppercase; letter-spacing: 0.06em; }
+         box-shadow: 0 2px 8px rgba(0,0,0,.06); }
+  .toc-title { font-weight: 600; color: var(--muted);
+               margin: 0 0 8px; font-size: 12px;
+               text-transform: uppercase; letter-spacing: 0.06em;
+               display: block; }
   .toc a { color: var(--accent); text-decoration: none; display: block;
-           padding: 9px 12px; border-radius: 7px; font-size: 15px;
-           background: #f8fafc; border: 1px solid var(--border);
-           white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+           padding: 7px 12px; border-radius: 5px; font-size: 14.5px;
+           line-height: 1.45; }
+  .toc a.toc-h2 { font-weight: 600; margin-top: 4px; }
+  .toc a.toc-h3 { padding-left: 28px; font-size: 13px; color: var(--fg);
+                  font-weight: 400; opacity: 0.85; }
   .toc a:hover { background: #eff6ff; }
-  .toc a.active { background: var(--accent); color: white; border-color: var(--accent);
-                  font-weight: 600; }
+  .toc a.active { background: var(--accent); color: white; font-weight: 600; opacity: 1; }
   /* 目录 —— 宽屏：右侧固定竖排 */
   @media (min-width: 1280px) {
-    .toc { position: fixed; top: 20px; right: 20px; width: 220px; max-height: calc(100vh - 40px);
-           overflow-y: auto; margin-bottom: 0; padding: 16px 14px;
-           display: block; }
-    .toc-title { display: block; margin: 0 0 10px; }
-    .toc a { display: block; margin: 0 0 4px; padding: 7px 12px; font-size: 13.5px;
-             background: transparent; border: none; border-left: 2px solid transparent;
+    .toc { position: fixed; top: 20px; right: 20px; width: 260px;
+           max-height: calc(100vh - 40px); overflow-y: auto;
+           margin-bottom: 0; padding: 16px 14px; }
+    .toc-title { margin: 0 0 10px; }
+    .toc a { margin: 0 0 2px; padding: 5px 12px; font-size: 13px;
+             background: transparent; border-left: 2px solid transparent;
              border-radius: 0 4px 4px 0; white-space: normal; }
+    .toc a.toc-h3 { padding-left: 26px; font-size: 12.5px; }
     .toc a:hover { background: #eff6ff; border-left-color: var(--accent); }
     .toc a.active { background: #eff6ff; color: var(--accent);
                     border-left-color: var(--accent); font-weight: 600; }
@@ -201,17 +203,80 @@
 
 <div class="toc">
   <span class="toc-title">目录</span>
-  <a href="#prep">⓪ 数学预热</a>
-  <a href="#what">① 线性回归是什么</a>
-  <a href="#loss">② 损失</a>
-  <a href="#ex1">③ 练习：手调参数</a>
-  <a href="#gd">④ 梯度下降</a>
-  <a href="#hyper">⑤ 超参数</a>
-  <a href="#ex2">⑥ 练习：梯度下降</a>
-  <a href="#code">⑦ 编程练习</a>
-  <a href="#quiz">⑧ 测试</a>
-  <a href="#next">⑨ 后续</a>
+  <!-- 链接由 JS 在 DOMContentLoaded 时自动从 section[id] > h2 + h3 生成 -->
 </div>
+
+<!-- ===================== 学习路线图 ===================== -->
+<section id="roadmap" class="card">
+  <h2>🗺️ 这门课怎么读 —— 一句话串起每一节</h2>
+  <p><strong>核心问题</strong>：怎么从一堆 <code>(房子面积, 价格)</code> 数据里，找出一条最能预测价格的直线？</p>
+  <p>整门课就是把这个问题层层拆开：先要会读数学语言，再有模型，模型要有打分标准，打分标准要能优化，优化要能调参数，最后要能写出来跑通。</p>
+
+  <table>
+    <thead>
+      <tr><th>节</th><th>学什么</th><th>为什么放在这</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>⓪ 数学预热</td>
+        <td>函数、导数、偏导、向量、内积</td>
+        <td>后面所有公式都用到。一上来就甩 $\nabla L$ 你会懵，先把"瞬时变化率""沿哪个方向走"这些底层零件备齐</td>
+      </tr>
+      <tr>
+        <td>① 模型是什么</td>
+        <td>$\hat y = wx+b$，多元情况</td>
+        <td>有了数学语言才能写模型。先把"我们到底在猜什么"说清，否则后面所有优化都是空转</td>
+      </tr>
+      <tr>
+        <td>② 损失函数</td>
+        <td>MSE 的定义 + 为什么是平方而不是绝对值</td>
+        <td>模型已经有了 → 必须给"好坏"一个数值标准，否则没法说一条线比另一条好。这一节回答"为什么用 MSE"</td>
+      </tr>
+      <tr>
+        <td>③ 手调互动</td>
+        <td>拖滑块自己找最优 $(w,b)$</td>
+        <td>损失定义完了 → 先用人肉感受一下"调参数 = 让损失变小"，建立直觉，避免下一节梯度下降变成纯公式</td>
+      </tr>
+      <tr>
+        <td>④ 梯度下降</td>
+        <td>偏导 → 更新规则 → 收敛过程</td>
+        <td>人肉调参太慢 → 让机器自己根据"哪个方向损失下降最快"走。用到的偏导正好是 ⓪.4 准备好的</td>
+      </tr>
+      <tr>
+        <td>⑤ 超参数</td>
+        <td>学习率、迭代次数、初始值</td>
+        <td>梯度下降能跑了 → 但跑得快/慢/发散全看 lr 怎么设。这一节回答"参数是机器学的，那超参数谁来定"</td>
+      </tr>
+      <tr>
+        <td>⑥ 学习率互动</td>
+        <td>在 lr=0.001/0.01/0.1 之间切换</td>
+        <td>⑤ 讲完概念 → 必须亲眼看一次发散和震荡，才知道"调大一点点就炸"不是吓唬人</td>
+      </tr>
+      <tr>
+        <td>⑦ 编程练习</td>
+        <td>numpy 手写 + sklearn 调库</td>
+        <td>前面六节全是数学和直觉 → 这一节落到代码。<strong>首次允许出现 <code>np.sum</code> 这种代码术语</strong>，前面刻意不提就是为了不让代码盖过原理</td>
+      </tr>
+      <tr>
+        <td>⑧ 测试</td>
+        <td>选择题</td>
+        <td>检查盲点，比如"MSE 平方是为了惩罚大误差还是为了可导？"——答案是两个都对，但层次不同</td>
+      </tr>
+      <tr>
+        <td>⑨ 后续</td>
+        <td>多项式回归、正则化、逻辑回归</td>
+        <td>线性回归是地基。<strong>逻辑回归只是把 $\hat y = wx+b$ 外面套一层 sigmoid</strong>，所以学完这门，下一门一半内容你已经会了</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>三条暗线（贯穿全课，不止一节）</h3>
+  <ol>
+    <li><strong>几何 ↔ 代数 ↔ 概率</strong> 三种视角看同一件事。比如 MSE 既是"误差平方和"（代数），也是"点到直线垂直距离平方"（几何），还是"高斯噪声下的最大似然"（概率）</li>
+    <li><strong>从一维到多维</strong>。每个概念都先用一个特征讲透，再扩展到向量/矩阵</li>
+    <li><strong>从手算到机器算</strong>。③ 是人手调，④ 是机器调，⑦ 是写代码让机器调</li>
+  </ol>
+</section>
 
 <!-- ===================== 0 数学预热 ===================== -->
 <section id="prep" class="card">
@@ -1965,17 +2030,56 @@ document.querySelectorAll(".quiz-q").forEach(q => {
   });
 });
 
-/* 目录：克隆链接到抽屉 + 滚动高亮同步两边 */
+/* 目录：自动扫 h2/h3 → 生成嵌套 TOC → 同步到抽屉 → 滚动高亮 */
 (function () {
-  // 把顶部 .toc 里的链接克隆一份到抽屉的 nav 里
+  const tocEl = document.querySelector(".toc");
   const drawerNav = document.getElementById("tocDrawerNav");
-  if (drawerNav) {
-    document.querySelectorAll(".toc a").forEach(a => {
-      drawerNav.appendChild(a.cloneNode(true));
-    });
+  if (!tocEl) return;
+
+  function slug(text) {
+    return text.trim()
+      .toLowerCase()
+      .replace(/^[\d.⓪①②③④⑤⑥⑦⑧⑨⑩]+\s*/, "")
+      .replace(/[\s/:：、,，()（）]+/g, "-")
+      .replace(/[^a-z0-9一-龥-]/g, "")
+      .replace(/^-+|-+$/g, "")
+      .substring(0, 50) || "h3";
+  }
+  const usedIds = new Set();
+  function uniqueId(base) {
+    let id = base, n = 2;
+    while (usedIds.has(id) || document.getElementById(id)) { id = base + "-" + n; n++; }
+    usedIds.add(id);
+    return id;
   }
 
-  // 同时高亮 .toc 和抽屉里的对应链接
+  const items = [];
+  document.querySelectorAll("section[id]").forEach(section => {
+    const h2 = section.querySelector(":scope > h2");
+    if (!h2) return;
+    items.push({ id: section.id, level: 2, text: h2.textContent.trim() });
+    section.querySelectorAll(":scope > h3").forEach(h3 => {
+      let id = h3.id;
+      if (!id) {
+        id = uniqueId(slug(h3.textContent));
+        h3.id = id;
+      }
+      items.push({ id, level: 3, text: h3.textContent.trim() });
+    });
+  });
+
+  items.forEach(item => {
+    const a = document.createElement("a");
+    a.href = "#" + item.id;
+    a.textContent = item.text;
+    a.classList.add(item.level === 2 ? "toc-h2" : "toc-h3");
+    tocEl.appendChild(a);
+  });
+
+  if (drawerNav) {
+    tocEl.querySelectorAll("a").forEach(a => drawerNav.appendChild(a.cloneNode(true)));
+  }
+
   const allLinks = document.querySelectorAll(".toc a, #tocDrawerNav a");
   if (!allLinks.length) return;
   const linkMap = new Map();
@@ -1984,15 +2088,15 @@ document.querySelectorAll(".quiz-q").forEach(q => {
     if (!linkMap.has(id)) linkMap.set(id, []);
     linkMap.get(id).push(a);
   });
-  const sections = Array.from(linkMap.keys())
+  const targets = Array.from(linkMap.keys())
     .map(id => document.getElementById(id))
     .filter(Boolean);
 
   function update() {
     const probe = window.innerHeight * 0.25;
-    let current = sections[0];
-    for (const s of sections) {
-      if (s.getBoundingClientRect().top <= probe) current = s;
+    let current = targets[0];
+    for (const t of targets) {
+      if (t.getBoundingClientRect().top <= probe) current = t;
       else break;
     }
     allLinks.forEach(a => a.classList.remove("active"));

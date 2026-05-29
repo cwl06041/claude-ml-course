@@ -108,29 +108,31 @@
   .metric-box .m .v { font-family: ui-monospace, monospace; font-size: 20px;
                       color: var(--accent); font-weight: 700; }
 
-  /* TOC：手机/平板 */
+  /* TOC：嵌套 h2 / h3 */
   .toc { background: var(--card); border: 1px solid var(--border);
          border-radius: 10px; padding: 14px 16px; margin-bottom: 24px;
-         box-shadow: 0 2px 8px rgba(0,0,0,.06);
-         display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px 10px; }
-  .toc-title { grid-column: 1 / -1; font-weight: 600; color: var(--muted);
-               margin: 0 0 2px; font-size: 12px;
-               text-transform: uppercase; letter-spacing: 0.06em; }
+         box-shadow: 0 2px 8px rgba(0,0,0,.06); }
+  .toc-title { font-weight: 600; color: var(--muted);
+               margin: 0 0 8px; font-size: 12px;
+               text-transform: uppercase; letter-spacing: 0.06em;
+               display: block; }
   .toc a { color: var(--accent); text-decoration: none; display: block;
-           padding: 9px 12px; border-radius: 7px; font-size: 15px;
-           background: #f8fafc; border: 1px solid var(--border);
-           white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+           padding: 7px 12px; border-radius: 5px; font-size: 14.5px;
+           line-height: 1.45; }
+  .toc a.toc-h2 { font-weight: 600; margin-top: 4px; }
+  .toc a.toc-h3 { padding-left: 28px; font-size: 13px; color: var(--fg);
+                  font-weight: 400; opacity: 0.85; }
   .toc a:hover { background: #eff6ff; }
-  .toc a.active { background: var(--accent); color: white; border-color: var(--accent);
-                  font-weight: 600; }
+  .toc a.active { background: var(--accent); color: white; font-weight: 600; opacity: 1; }
   @media (min-width: 1280px) {
-    .toc { position: fixed; top: 20px; right: 20px; width: 220px; max-height: calc(100vh - 40px);
-           overflow-y: auto; margin-bottom: 0; padding: 16px 14px;
-           display: block; }
-    .toc-title { display: block; margin: 0 0 10px; }
-    .toc a { display: block; margin: 0 0 4px; padding: 7px 12px; font-size: 13.5px;
-             background: transparent; border: none; border-left: 2px solid transparent;
+    .toc { position: fixed; top: 20px; right: 20px; width: 260px;
+           max-height: calc(100vh - 40px); overflow-y: auto;
+           margin-bottom: 0; padding: 16px 14px; }
+    .toc-title { margin: 0 0 10px; }
+    .toc a { margin: 0 0 2px; padding: 5px 12px; font-size: 13px;
+             background: transparent; border-left: 2px solid transparent;
              border-radius: 0 4px 4px 0; white-space: normal; }
+    .toc a.toc-h3 { padding-left: 26px; font-size: 12.5px; }
     .toc a:hover { background: #eff6ff; border-left-color: var(--accent); }
     .toc a.active { background: #eff6ff; color: var(--accent);
                     border-left-color: var(--accent); font-weight: 600; }
@@ -213,16 +215,34 @@
 
 <div class="toc">
   <span class="toc-title">目录</span>
-  <a href="#intro">① 简介</a>
-  <a href="#threshold">② 阈值与混淆矩阵</a>
-  <a href="#metrics">③ 准确率/精确率/召回率</a>
-  <a href="#roc">④ ROC 与 AUC</a>
-  <a href="#bias">⑤ 预测偏差</a>
-  <a href="#multi">⑥ 多类别分类</a>
-  <a href="#code">⑦ 编程练习</a>
-  <a href="#quiz">⑧ 测试</a>
-  <a href="#next">⑨ 后续</a>
+  <!-- 链接由 JS 在 DOMContentLoaded 时自动从 section[id] > h2 + h3 生成 -->
 </div>
+
+<!-- ===================== 1 简介 ===================== -->
+<section id="prep" class="card">
+  <h2>⓪ 数学预热</h2>
+  <p>这一节把后面会用到、但又不属于"分类"本身的小工具先备齐。<strong>每条工具只服务于一处</strong>，旁边都标了"会在 ③.6 用到"这种引用——你也可以跳过，等用到时回头看。</p>
+
+  <h3>0.1 调和平均（harmonic mean）—— 服务于 ③.6 F1 分数</h3>
+  <p>给两个正数 $a, b$，我们有三种"取个中间值"的方式。它们各有性格：</p>
+  <table>
+    <tr><th>平均类型</th><th>公式</th><th>$a=0.9, b=0.1$ 算出来</th><th>$a=0.9, b=0.9$ 算出来</th></tr>
+    <tr><td>算术平均</td><td>$\dfrac{a+b}{2}$</td><td>0.50</td><td>0.90</td></tr>
+    <tr><td>几何平均</td><td>$\sqrt{ab}$</td><td>0.30</td><td>0.90</td></tr>
+    <tr class="hl"><td><strong>调和平均</strong></td><td>$\dfrac{2}{\frac{1}{a} + \frac{1}{b}} = \dfrac{2ab}{a+b}$</td><td><strong>0.18</strong></td><td>0.90</td></tr>
+  </table>
+  <p class="meta">当两个数相等时（右列 $a=b=0.9$），三种平均给同样答案。差异出现在<strong>两个数差距大的时候</strong>（左列 $a=0.9, b=0.1$）—— 调和平均给出的值最小。</p>
+
+  <p><strong>直觉</strong>：调和平均<strong>惩罚最弱的那个</strong>。任何一个数接近 0，调和平均就被拉爆——而算术平均对此漠不关心（"另一个高就能拉回来"），几何平均居中。</p>
+
+  <p>为什么倒数能产生这种"惩罚"效果？因为<strong>很小的数取倒数后变得很大</strong>。代入 $a = 0.01$：$1/a = 100$。它在求和 $1/a + 1/b$ 里占绝对主导，把整个调和平均（取倒数再除）拉低。</p>
+
+  <div class="link">
+    <strong>用在哪</strong>：③.6 节会定义 <strong>F1 分数</strong> $= 2PR/(P+R)$ —— 这其实就是 Precision 和 Recall 的<strong>调和平均</strong>。选调和平均是因为：模型必须在 P 和 R <strong>两边都不错</strong>才算好。如果 P=0.99 但 R=0.05（"只挑最有把握的报"），算术平均给 0.52 看着还行，调和平均直接给 0.095 把问题暴露出来。
+  </div>
+
+  <p class="meta">⚙️ 名字由来：三个平均分别对应数学里三种古希腊"中项"——算术中项 / 几何中项 / 调和中项。"调和"（harmonic）来自音乐：弦长成调和比例的两根弦同奏会很和谐。和 F1 没关系，但解释了名字。</p>
+</section>
 
 <!-- ===================== 1 简介 ===================== -->
 <section id="intro" class="card">
@@ -239,6 +259,26 @@
     ③ 不同阈值下错误的形态不一样。<strong>怎么选阈值最合适</strong>？
   </div>
 
+  <details>
+    <summary>🤔 异想天开：既然最后要 0/1，为什么不一开始就用离散模型？</summary>
+    <p>你可能会想：既然终点是 0/1，那中间这个"概率"和"阈值"看起来是多此一举——为什么不让模型直接输出 0/1？</p>
+
+    <p><strong>结论先说</strong>：可以，历史上真的有过纯离散模型（1958 年的<strong>感知机 Perceptron</strong>），但它有个致命问题——<strong>离散函数的导数几乎处处为 0，梯度下降跑不动</strong>。连续概率不是因为"我们想要概率"才出现的，而是因为<strong>优化需要可导的损失函数</strong>，它是被数学逼出来的中间人。</p>
+
+    <p><strong>假设直接用阶跃函数</strong>：$\hat y = \text{step}(\mathbf{w}^\top\mathbf{x} + b)$，输出非 0 即 1。预测层面没问题，但训练时算 $\partial L / \partial \mathbf{w}$ 会发现——稍微挪一下 $\mathbf{w}$，阶跃函数的输出大概率完全不变，偶尔啪的一下从 0 跳到 1。<strong>梯度几乎处处 = 0，偶尔 = ∞ → 梯度下降不知道往哪走</strong>。</p>
+
+    <p><strong>历史佐证</strong>：感知机用一条特殊规则（猜错就把样本加/减到 $\mathbf{w}$ 上）训练，在数据线性可分时能收敛，但线性不可分就永远震荡。1969 年 Minsky 和 Papert 证明它连 XOR 都学不会，神经网络被打入冷宫整整二十年——史称"AI 第一次寒冬"。直到 1980s 反向传播 + sigmoid 出现，本质就是<strong>把阶跃函数换成连续的 sigmoid，让梯度下降能跑</strong>。</p>
+
+    <p><strong>所以这门课讨论"概率 → 0/1"到底在讨论什么</strong>：</p>
+    <ul>
+      <li><strong>训练时</strong>用连续函数（sigmoid 输出概率）—— 必须可导，梯度下降才能跑</li>
+      <li><strong>预测时</strong>用离散输出（套阈值变 0/1）—— 业务要的就是 0/1</li>
+    </ul>
+    <p>连续概率是<strong>训练用的桥梁</strong>，不是预测的必需品。本课讨论"怎么选阈值"，本质是<strong>在桥梁的另一端，把概率落地成决策</strong>——这一步在训练之外，是独立的业务决策问题。</p>
+
+    <p class="meta">这个套路在现代 ML 里反复出现，叫<strong>连续松弛</strong>（continuous relaxation）：想要 argmax → 训练用 softmax；想要硬注意力 → 用 soft attention；想要离散动作 → 用策略梯度。每次都是同一个故事——预测可以离散，但训练必须可导。</p>
+  </details>
+
   <h3>1.1 两类错误，代价不对称</h3>
   <p>在肿瘤场景里，模型可能出两种错：</p>
   <ul>
@@ -250,6 +290,7 @@
   <h3>1.2 本篇路线图</h3>
   <table>
     <tr><th>节</th><th>问题</th><th>核心概念</th></tr>
+    <tr><td>⓪</td><td>后面要用、但属于纯数学的小工具先备齐</td><td>调和平均（之后还会按需扩充）</td></tr>
     <tr><td>②</td><td>怎么把 $p$ 变成 0/1？犯错的形态怎么分类？</td><td>阈值 $\tau$、混淆矩阵、TP/TN/FP/FN</td></tr>
     <tr><td>③</td><td>类别不平衡时 accuracy 为啥骗人？错误的代价怎么单独衡量？</td><td>Precision、Recall、F1</td></tr>
     <tr><td>④</td><td>能不能不挑阈值就比较两个模型的好坏？</td><td>ROC 曲线、AUC</td></tr>
@@ -263,7 +304,7 @@
     <li><strong>特征</strong>：肿瘤直径（mm）、形状不规则度（0–1）</li>
     <li><strong>真实标签</strong>：0 = 良性，1 = 恶性</li>
     <li><strong>类别比例</strong>：65 恶性 / 135 良性（恶性约 32.5%，<strong>不平衡</strong>）</li>
-    <li><strong>模型预测</strong>：用逻辑回归在这批数据上训练后输出 $p$，AUC ≈ 0.92（接近真实场景的良好但不完美的模型）</li>
+    <li><strong>模型预测</strong>：用逻辑回归在这批数据上训练后输出 $p$ —— 模型在这批数据上表现良好但不完美（具体怎么衡量"良好"后面会展开）</li>
   </ul>
   <svg id="plot-scatter" viewBox="0 0 640 380"></svg>
   <p class="meta">↑ 数据散点。两类有重叠 —— 现实里几乎不可能完全分开。模型输出的 $p$ 大致刻画了"这个点更像哪边"，但有的样本注定会被搞错。</p>
@@ -296,7 +337,8 @@
     <div class="m"><div class="lbl">Precision 精确率</div><div class="v" id="cm-prec">—</div></div>
     <div class="m"><div class="lbl">Recall 召回率</div><div class="v" id="cm-rec">—</div></div>
   </div>
-  <p class="meta">↑ 这张矩阵会跟着上面的 τ 滑块联动。先看 τ=0.5 的默认情况，再试试拖到 0.3 和 0.7 看哪个数变了多少。</p>
+  <p class="meta">↑ 这张矩阵会跟着上面的 τ 滑块联动。先看 τ=0.5 的默认情况，再试试拖到 0.3 和 0.7 看哪个数变了多少。<br>
+  右上角那三个指标（Accuracy / Precision / Recall）暂时只看数字怎么跟着 τ 变化，<strong>它们的定义和含义到 ③ 节才展开</strong>——这里先埋下"为什么需要这些指标"的伏笔。</p>
 
   <div class="tip">
     <strong>关于矩阵的"行列方向"</strong>：本课用<strong>行 = 真实标签、列 = 模型预测</strong>（与 sklearn <code>confusion_matrix</code> 一致）。但你在论文 / 教科书里会看到反过来的版本（行 = 预测、列 = 真实）—— 两种约定都对，看到时先确认坐标轴含义。<br>
@@ -403,12 +445,28 @@
   </ul>
   <p>下图把 P/R 在所有 $\tau \in [0, 1]$ 上画出来：</p>
   <svg id="plot-pr-vs-tau" viewBox="0 0 640 360"></svg>
-  <p class="meta">蓝色 = Precision，红色 = Recall，紫色 = F1。注意两端的极端情况：τ→0 时几乎所有样本都判恶性（recall 接近 1，precision 接近正例比例 32.5%）；τ→1 时几乎没人被判恶性（precision 接近 1，recall 趋近 0）。</p>
+  <p class="meta">蓝色 = Precision，红色 = Recall。注意两端的极端情况：τ→0 时几乎所有样本都判恶性（recall 接近 1，precision 接近正例比例 32.5%）；τ→1 时几乎没人被判恶性（precision 接近 1，recall 趋近 0）。两条线在中间某处交叉——能不能用一个数同时反映 P 和 R 的好坏？下一节给答案。</p>
 
   <h3>3.6 F1 分数：在 P 和 R 之间找平衡</h3>
   <p>有时你既想要高 precision 又想要高 recall。一个常用的合体指标是 <strong>F1 分数</strong>：</p>
   <p>$$F_1 = \frac{2 \cdot \text{Precision} \cdot \text{Recall}}{\text{Precision} + \text{Recall}} \;=\; \frac{2\,\text{TP}}{2\,\text{TP} + \text{FP} + \text{FN}}$$</p>
   <p>左边形式按定义；右边形式把 P/R 代入化简后得到 —— 计算时不用先算 P 和 R，直接从混淆矩阵的 3 个格子算出来。这叫做 P 和 R 的<strong>调和平均</strong>（harmonic mean）。它有一个非常有用的性质：<strong>只要任意一个特别低，F1 就会被拉得很低</strong>。</p>
+
+  <details>
+    <summary>左边的 P/R 形式怎么化简成右边的 TP/FP/FN 形式？</summary>
+    <p>从定义出发：$P = \dfrac{\text{TP}}{\text{TP}+\text{FP}}$，$R = \dfrac{\text{TP}}{\text{TP}+\text{FN}}$。代入 $F_1 = \dfrac{2PR}{P+R}$。</p>
+    <p><strong>分子</strong>：</p>
+    <p>$$2PR = 2 \cdot \frac{\text{TP}}{\text{TP}+\text{FP}} \cdot \frac{\text{TP}}{\text{TP}+\text{FN}} = \frac{2\,\text{TP}^2}{(\text{TP}+\text{FP})(\text{TP}+\text{FN})}$$</p>
+    <p><strong>分母</strong>（先把两个分式通分到同一个分母 $(\text{TP}+\text{FP})(\text{TP}+\text{FN})$）：</p>
+    <p>$$P + R = \frac{\text{TP}(\text{TP}+\text{FN})}{(\text{TP}+\text{FP})(\text{TP}+\text{FN})} + \frac{\text{TP}(\text{TP}+\text{FP})}{(\text{TP}+\text{FP})(\text{TP}+\text{FN})}$$</p>
+    <p>把分子里的 $\text{TP}$ 提出来合并：</p>
+    <p>$$P + R = \frac{\text{TP}\big[(\text{TP}+\text{FN}) + (\text{TP}+\text{FP})\big]}{(\text{TP}+\text{FP})(\text{TP}+\text{FN})} = \frac{\text{TP}(2\,\text{TP}+\text{FP}+\text{FN})}{(\text{TP}+\text{FP})(\text{TP}+\text{FN})}$$</p>
+    <p><strong>分子除以分母</strong>（共同的 $(\text{TP}+\text{FP})(\text{TP}+\text{FN})$ 抵消）：</p>
+    <p>$$F_1 = \frac{2\,\text{TP}^2 \,/\, \cancel{(\text{TP}+\text{FP})(\text{TP}+\text{FN})}}{\text{TP}(2\,\text{TP}+\text{FP}+\text{FN}) \,/\, \cancel{(\text{TP}+\text{FP})(\text{TP}+\text{FN})}} = \frac{2\,\text{TP}^2}{\text{TP}(2\,\text{TP}+\text{FP}+\text{FN})}$$</p>
+    <p>再把分子分母同时除以 $\text{TP}$（注意 $\text{TP}=0$ 是边界情况，3.8 节单独讨论）：</p>
+    <p>$$F_1 = \frac{2\,\text{TP}}{2\,\text{TP}+\text{FP}+\text{FN}}$$</p>
+    <p class="meta">观察右边的形式：分母里 <strong>没有 TN</strong>。这意味着 F1 完全不关心"真负例"——你把数据集里的良性样本扩大十倍，F1 不变。这正是它在<strong>类别不平衡</strong>场景下好用的原因。</p>
+  </details>
   <table>
     <tr><th>P</th><th>R</th><th>算术平均 (P+R)/2</th><th>调和平均 F1</th></tr>
     <tr><td>0.9</td><td>0.9</td><td>0.90</td><td>0.90</td></tr>
@@ -419,11 +477,15 @@
   <p>对比看最后两行：一个指标极高、另一个极低时，算术平均还看着不错（0.55），<strong>但 F1 直接拉到 0.18 提示你"这模型有大问题"</strong>。这就是用调和平均的原因 —— 它<strong>惩罚极端</strong>，不允许一个指标接近 0。</p>
 
   <details>
-    <summary>F1 公式从哪来？调和平均的几何直觉</summary>
-    <p>调和平均的定义：$\dfrac{2}{1/a + 1/b}$（两个倒数取算术平均后再倒数）。代入 $a = P, b = R$ 化简：</p>
+    <summary>F1 公式怎么从"调和平均"长出来的？</summary>
+    <p>⓪.1 已经讲过调和平均的定义 $\dfrac{2}{1/a + 1/b}$ 以及"为什么倒数能惩罚小值"。这里把 $a = P, b = R$ 代入，化简就得到 F1：</p>
     <p>$$\frac{2}{\frac{1}{P} + \frac{1}{R}} = \frac{2}{\frac{P + R}{PR}} = \frac{2PR}{P + R}$$</p>
-    <p><strong>为什么倒数</strong>？因为"很小的数取倒数后变得很大"。如果 $P = 0.01$，则 $1/P = 100$ —— 它在求和 $1/a + 1/b$ 里占绝对主导，把整个调和平均拉低。所以调和平均对小值敏感、对极端值有惩罚。</p>
+    <p>所以 F1 不是凭空捏造的公式，就是 P 和 R 的调和平均。</p>
   </details>
+
+  <p>回到 3.5 节那张 P/R 曲线，现在把 F1 加进来看看它怎么在 P 和 R 之间走平衡：</p>
+  <svg id="plot-pr-f1-vs-tau" viewBox="0 0 640 360"></svg>
+  <p class="meta">紫线就是 F1。它在 P 和 R 两条线"差距最小"的区域附近取到最大值——这正是调和平均"惩罚极端"的视觉证据。最大点对应的 τ 常被称为<strong>"F1 最优阈值"</strong>，在没有明确业务代价偏向时，是个合理的默认选择。</p>
 
   <h3>3.7 其他常见指标提一下</h3>
   <table>
@@ -461,7 +523,26 @@
     <li><strong>横轴 FPR</strong>（False Positive Rate，假正例率）= $\dfrac{FP}{FP + TN}$。"实际良性里被误判恶性的比例"，越低越好。</li>
   </ul>
 
-  <div class="why">为什么挑 TPR 和 FPR 这一对？因为它们<strong>分别衡量"正例上的表现"和"负例上的表现"</strong>，相互独立。Precision 的分母混了 TP 和 FP 两类，无法干净分离；而 TPR 只看正例分母、FPR 只看负例分母 —— 类别不平衡也不影响它们的解读。</div>
+  <div class="why">
+    <p><strong>为什么挑 TPR 和 FPR 这一对？关键是它们的"分母只看一类样本"。</strong></p>
+    <ul>
+      <li>$\text{TPR} = \dfrac{\text{TP}}{\text{TP}+\text{FN}}$ —— 分母 $\text{TP}+\text{FN}$ = <strong>所有实际正例的总数</strong>。完全不涉及负例</li>
+      <li>$\text{FPR} = \dfrac{\text{FP}}{\text{FP}+\text{TN}}$ —— 分母 $\text{FP}+\text{TN}$ = <strong>所有实际负例的总数</strong>。完全不涉及正例</li>
+    </ul>
+    <p>这意味着两件事：</p>
+    <p><strong>① 两个指标各自封闭。</strong> 在数据集里多加 100 个良性样本（负例），TPR 一点不变（它的分子分母都只数正例）；多加 100 个恶性样本，FPR 一点不变。它们各自度量模型"在自己那一类上的命中率"，互不干扰。</p>
+    <p><strong>② Precision 没有这个性质。</strong> $\text{Precision} = \dfrac{\text{TP}}{\text{TP}+\text{FP}}$ 分母里 $\text{TP}$ 来自正例、$\text{FP}$ 来自负例——<strong>两类混在一起</strong>。类别比例一变，Precision 跟着变，哪怕模型本身没变。</p>
+
+    <p><strong>用数字看一眼</strong>。假设同一个模型在固定 $\tau$ 下，每个样本的判断不变：</p>
+    <table>
+      <tr><th>场景</th><th>TP</th><th>FN</th><th>FP</th><th>TN</th><th>TPR</th><th>FPR</th><th>Precision</th></tr>
+      <tr><td>数据集 A：100 正 + 100 负</td><td>80</td><td>20</td><td>20</td><td>80</td><td>0.80</td><td>0.20</td><td>0.80</td></tr>
+      <tr><td>数据集 B：100 正 + <strong>1000 负</strong>（负例 ×10，模型行为不变）</td><td>80</td><td>20</td><td>200</td><td>800</td><td>0.80</td><td>0.20</td><td><strong>0.29</strong></td></tr>
+    </table>
+    <p>同一个模型，仅仅因为换了一个负例更多的数据集，<strong>Precision 从 0.80 跌到 0.29</strong>，而 TPR / FPR 纹丝不动。这就是说："类别不平衡不影响 TPR/FPR 的解读"——它们刻画的是模型本身，不是数据的类别配比。</p>
+
+    <p class="meta">这也解释了为什么 ROC 曲线在医疗、欺诈检测这种<strong>类别极度不平衡</strong>的场景下仍然好用：横纵轴都不会被"负例多"绑架。代价是——它也<strong>不告诉你</strong>负例多了之后 Precision 会塌方（这是 PR 曲线擅长的事，本课没展开）。</p>
+  </div>
 
   <p>让 $\tau$ 从 1 滑到 0，每个 $\tau$ 算出一对 (FPR, TPR)，连起来就是 ROC 曲线：</p>
 
@@ -1106,12 +1187,43 @@ function drawConfMat(tau) {
   refresh();
 })();
 
-// =========== 3.5 P/R/F1 关于 τ 的曲线 ===========
+// =========== 3.5 P/R 关于 τ 的曲线 ===========
 (function(){
   const svg = document.getElementById("plot-pr-vs-tau");
+  if (!svg) return;
   const ax = makeAxes(svg, {xMin:0, xMax:1, yMin:0, yMax:1, w:640, h:360,
     m:{l:55,r:20,t:30,b:42}, xTicks:[0,0.2,0.4,0.6,0.8,1.0], yTicks:[0,0.2,0.4,0.6,0.8,1.0],
-    xLabel:"阈值 τ", yLabel:"指标值", title:"Precision / Recall / F1 随 τ 的变化"});
+    xLabel:"阈值 τ", yLabel:"指标值", title:"Precision / Recall 随 τ 的变化"});
+  const taus = [], precs = [], recs = [];
+  for (let t = 0.01; t <= 0.99; t += 0.01) {
+    const { TP, FP, FN } = confMat(t);
+    const p = (TP+FP)>0 ? TP/(TP+FP) : 1;
+    const r = (TP+FN)>0 ? TP/(TP+FN) : 0;
+    taus.push(t); precs.push(p); recs.push(r);
+  }
+  function plotLine(xs, ys, color) {
+    const d = xs.map((x, i) => (i===0?"M":"L") + ax.xPx(x).toFixed(2) + "," + ax.yPx(ys[i]).toFixed(2)).join(" ");
+    svg.appendChild(svgEl("path", {d, stroke:color, "stroke-width":2.4, fill:"none"}));
+  }
+  plotLine(taus, precs, "#2563eb");
+  plotLine(taus, recs,  "#dc2626");
+  // 图例
+  lbl(svg, ax.xPx(0.04), ax.yPx(0.10), "— Precision", "#2563eb", 12);
+  lbl(svg, ax.xPx(0.04), ax.yPx(0.04), "— Recall",    "#dc2626", 12);
+  // 实际正例比例参考线
+  const baseRate = TUMOR.filter(d => d[2]===1).length / TUMOR.length;
+  svg.appendChild(svgEl("line", {x1:ax.xPx(0), y1:ax.yPx(baseRate), x2:ax.xPx(1), y2:ax.yPx(baseRate),
+    stroke:"#94a3b8", "stroke-width":1, "stroke-dasharray":"3,3"}));
+  lbl(svg, ax.xPx(0.85), ax.yPx(baseRate)-4, `正例比例 = ${baseRate.toFixed(3)}`, "#475569", 11);
+})();
+
+// =========== 3.6 P/R/F1 关于 τ 的曲线 ===========
+(function(){
+  const svg = document.getElementById("plot-pr-f1-vs-tau");
+  if (!svg) return;
+  const ax = makeAxes(svg, {xMin:0, xMax:1, yMin:0, yMax:1, w:640, h:360,
+    m:{l:55,r:20,t:30,b:42}, xTicks:[0,0.2,0.4,0.6,0.8,1.0], yTicks:[0,0.2,0.4,0.6,0.8,1.0],
+    xLabel:"阈值 τ", yLabel:"指标值", title:"加上 F1 后：在哪个 τ 上达到峰值"});
   const taus = [], precs = [], recs = [], f1s = [];
   for (let t = 0.01; t <= 0.99; t += 0.01) {
     const { TP, FP, FN } = confMat(t);
@@ -1127,15 +1239,18 @@ function drawConfMat(tau) {
   plotLine(taus, precs, "#2563eb");
   plotLine(taus, recs,  "#dc2626");
   plotLine(taus, f1s,   "#7c3aed");
+  // F1 最大点标记
+  let bestI = 0;
+  for (let i = 1; i < f1s.length; i++) if (f1s[i] > f1s[bestI]) bestI = i;
+  const bx = ax.xPx(taus[bestI]), by = ax.yPx(f1s[bestI]);
+  svg.appendChild(svgEl("circle", {cx:bx, cy:by, r:5, fill:"#7c3aed", stroke:"#fff", "stroke-width":2}));
+  svg.appendChild(svgEl("line", {x1:bx, y1:by, x2:bx, y2:ax.yPx(0),
+    stroke:"#7c3aed", "stroke-width":1, "stroke-dasharray":"3,3"}));
+  lbl(svg, bx + 8, by - 6, `F1 最大 ≈ ${f1s[bestI].toFixed(2)}  (τ ≈ ${taus[bestI].toFixed(2)})`, "#7c3aed", 12);
   // 图例
   lbl(svg, ax.xPx(0.04), ax.yPx(0.16), "— Precision", "#2563eb", 12);
   lbl(svg, ax.xPx(0.04), ax.yPx(0.10), "— Recall",    "#dc2626", 12);
   lbl(svg, ax.xPx(0.04), ax.yPx(0.04), "— F1",        "#7c3aed", 12);
-  // 实际正例比例参考线
-  const baseRate = TUMOR.filter(d => d[2]===1).length / TUMOR.length;
-  svg.appendChild(svgEl("line", {x1:ax.xPx(0), y1:ax.yPx(baseRate), x2:ax.xPx(1), y2:ax.yPx(baseRate),
-    stroke:"#94a3b8", "stroke-width":1, "stroke-dasharray":"3,3"}));
-  lbl(svg, ax.xPx(0.85), ax.yPx(baseRate)-4, `正例比例 = ${baseRate.toFixed(3)}`, "#475569", 11);
 })();
 
 // =========== 4.2 ROC 曲线 + 滑块联动当前点 ===========
@@ -1267,14 +1382,56 @@ document.querySelectorAll(".quiz-q").forEach(q => {
   });
 });
 
-// =========== TOC 克隆 + 滚动高亮 ===========
+// =========== TOC: 自动扫 h2/h3 → 嵌套生成 → 同步抽屉 → 滚动高亮 ===========
 (function () {
+  const tocEl = document.querySelector(".toc");
   const drawerNav = document.getElementById("tocDrawerNav");
-  if (drawerNav) {
-    document.querySelectorAll(".toc a").forEach(a => {
-      drawerNav.appendChild(a.cloneNode(true));
-    });
+  if (!tocEl) return;
+
+  function slug(text) {
+    return text.trim()
+      .toLowerCase()
+      .replace(/^[\d.⓪①②③④⑤⑥⑦⑧⑨⑩]+\s*/, "")
+      .replace(/[\s/:：、,，()（）]+/g, "-")
+      .replace(/[^a-z0-9一-龥-]/g, "")
+      .replace(/^-+|-+$/g, "")
+      .substring(0, 50) || "h3";
   }
+  const usedIds = new Set();
+  function uniqueId(base) {
+    let id = base, n = 2;
+    while (usedIds.has(id) || document.getElementById(id)) { id = base + "-" + n; n++; }
+    usedIds.add(id);
+    return id;
+  }
+
+  const items = [];
+  document.querySelectorAll("section[id]").forEach(section => {
+    const h2 = section.querySelector(":scope > h2");
+    if (!h2) return;
+    items.push({ id: section.id, level: 2, text: h2.textContent.trim() });
+    section.querySelectorAll(":scope > h3").forEach(h3 => {
+      let id = h3.id;
+      if (!id) {
+        id = uniqueId(slug(h3.textContent));
+        h3.id = id;
+      }
+      items.push({ id, level: 3, text: h3.textContent.trim() });
+    });
+  });
+
+  items.forEach(item => {
+    const a = document.createElement("a");
+    a.href = "#" + item.id;
+    a.textContent = item.text;
+    a.classList.add(item.level === 2 ? "toc-h2" : "toc-h3");
+    tocEl.appendChild(a);
+  });
+
+  if (drawerNav) {
+    tocEl.querySelectorAll("a").forEach(a => drawerNav.appendChild(a.cloneNode(true)));
+  }
+
   const allLinks = document.querySelectorAll(".toc a, #tocDrawerNav a");
   if (!allLinks.length) return;
   const linkMap = new Map();
@@ -1283,14 +1440,15 @@ document.querySelectorAll(".quiz-q").forEach(q => {
     if (!linkMap.has(id)) linkMap.set(id, []);
     linkMap.get(id).push(a);
   });
-  const sections = Array.from(linkMap.keys())
+  const targets = Array.from(linkMap.keys())
     .map(id => document.getElementById(id))
     .filter(Boolean);
+
   function update() {
     const probe = window.innerHeight * 0.25;
-    let current = sections[0];
-    for (const s of sections) {
-      if (s.getBoundingClientRect().top <= probe) current = s;
+    let current = targets[0];
+    for (const t of targets) {
+      if (t.getBoundingClientRect().top <= probe) current = t;
       else break;
     }
     allLinks.forEach(a => a.classList.remove("active"));

@@ -90,30 +90,32 @@
                             font-size: 13.5px; padding: 14px 16px; margin: 12px 0; }
   code:not([class*="language-"]) { background: var(--code-bg); padding: 2px 6px; border-radius: 4px;
          font-size: 0.9em; color: #b91c1c; }
-  /* 目录 —— 手机/平板：2 列卡片按钮 */
+  /* 目录 —— 嵌套 h2 / h3 */
   .toc { background: var(--card); border: 1px solid var(--border);
          border-radius: 10px; padding: 14px 16px; margin-bottom: 24px;
-         box-shadow: 0 2px 8px rgba(0,0,0,.06);
-         display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px 10px; }
-  .toc-title { grid-column: 1 / -1; font-weight: 600; color: var(--muted);
-               margin: 0 0 2px; font-size: 12px;
-               text-transform: uppercase; letter-spacing: 0.06em; }
+         box-shadow: 0 2px 8px rgba(0,0,0,.06); }
+  .toc-title { font-weight: 600; color: var(--muted);
+               margin: 0 0 8px; font-size: 12px;
+               text-transform: uppercase; letter-spacing: 0.06em;
+               display: block; }
   .toc a { color: var(--accent); text-decoration: none; display: block;
-           padding: 9px 12px; border-radius: 7px; font-size: 15px;
-           background: #f8fafc; border: 1px solid var(--border);
-           white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+           padding: 7px 12px; border-radius: 5px; font-size: 14.5px;
+           line-height: 1.45; }
+  .toc a.toc-h2 { font-weight: 600; margin-top: 4px; }
+  .toc a.toc-h3 { padding-left: 28px; font-size: 13px; color: var(--fg);
+                  font-weight: 400; opacity: 0.85; }
   .toc a:hover { background: #eff6ff; }
-  .toc a.active { background: var(--accent); color: white; border-color: var(--accent);
-                  font-weight: 600; }
+  .toc a.active { background: var(--accent); color: white; font-weight: 600; opacity: 1; }
   /* 目录 —— 宽屏：右侧固定竖排 */
   @media (min-width: 1280px) {
-    .toc { position: fixed; top: 20px; right: 20px; width: 220px; max-height: calc(100vh - 40px);
-           overflow-y: auto; margin-bottom: 0; padding: 16px 14px;
-           display: block; }
-    .toc-title { display: block; margin: 0 0 10px; }
-    .toc a { display: block; margin: 0 0 4px; padding: 7px 12px; font-size: 13.5px;
-             background: transparent; border: none; border-left: 2px solid transparent;
+    .toc { position: fixed; top: 20px; right: 20px; width: 260px;
+           max-height: calc(100vh - 40px); overflow-y: auto;
+           margin-bottom: 0; padding: 16px 14px; }
+    .toc-title { margin: 0 0 10px; }
+    .toc a { margin: 0 0 2px; padding: 5px 12px; font-size: 13px;
+             background: transparent; border-left: 2px solid transparent;
              border-radius: 0 4px 4px 0; white-space: normal; }
+    .toc a.toc-h3 { padding-left: 26px; font-size: 12.5px; }
     .toc a:hover { background: #eff6ff; border-left-color: var(--accent); }
     .toc a.active { background: #eff6ff; color: var(--accent);
                     border-left-color: var(--accent); font-weight: 600; }
@@ -202,15 +204,66 @@
 <h1>逻辑回归：从场景到代码</h1>
 <p class="lead">把"线性回归 → 概率 → 二分类"这条路一遍走通。承接前一篇<a href="linear-regression-course.html">线性回归</a>。</p>
 
+<!-- ===================== 学习路线图 ===================== -->
+<section id="roadmap" class="card">
+  <h2>🗺️ 这门课怎么读 —— 一句话串起每一节</h2>
+  <p><strong>核心问题</strong>：怎么从一堆 <code>(学习时数, 是否通过考试)</code> 数据里，学到一个能输出"通过概率"的模型？</p>
+  <p>这条路本质上是把线性回归改造一遍：模型外面套层 sigmoid 把输出压到 $[0,1]$ → MSE 在 sigmoid 上崩了，换成对数损失 → 数据线性可分时 $|w|$ 爆炸，加正则化兜底 → 最后落到代码。每一节都在解决上一节遗留的问题。</p>
+
+  <table>
+    <thead>
+      <tr><th>节</th><th>学什么</th><th>为什么放在这</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>⓪ 数学预热</td>
+        <td>条件概率 $P(y \mid x)$、独立事件连乘、$\ln$ 的两条性质</td>
+        <td>第 ③ 节推对数损失要用到 MLE，而 MLE 整条链就是"条件概率 → 连乘 → 取 log 变连加"。先把这些零件摆出来，到时候推导才不会卡在符号上</td>
+      </tr>
+      <tr>
+        <td>① 简介</td>
+        <td>分类 vs 回归的差别；直接用线性回归预测 0/1 为什么不行</td>
+        <td>用一个失败案例（线性回归画在 0/1 数据上）暴露出新需求：<strong>输出必须在 $[0,1]$ 之间</strong>，对极端值不能太敏感。下一节的 sigmoid 就是冲着这两条来的</td>
+      </tr>
+      <tr>
+        <td>② 计算概率</td>
+        <td>概率 → odds → log-odds 三步搭桥，反解出 sigmoid；1D / 2D 决策边界</td>
+        <td>① 提出了"要 $[0,1]$ 输出"，这一节给出具体函数。关键 insight：sigmoid 不是临时拼的"压扁器"，是"log-odds 关于 $\mathbf{x}$ 线性"假设的代数副产品。模型有了，下一节才能给它配损失</td>
+      </tr>
+      <tr>
+        <td>③ 损失和正则化</td>
+        <td>为什么 MSE 在 sigmoid 上崩了；对数损失（从 MLE 推出）；线性可分时 $|w|$ 爆炸 → L1/L2 正则化</td>
+        <td>模型有了 → 必须给"好坏"一个数值标准。这节回答三个递进问题：(1) 沿用线性回归的 MSE 行不行（不行，非凸 + 梯度消失）；(2) 那用什么（对数损失，MLE 推出的）；(3) 配对数损失会出新问题（$|w|$ 飙到无穷），怎么治（正则化）</td>
+      </tr>
+      <tr>
+        <td>④ 编程练习</td>
+        <td>numpy 手写训练循环（含梯度下降 + L2）+ sklearn 调库；sklearn 的 C 参数 vs 我们的 $\lambda$</td>
+        <td>前三节全是数学和直觉 → 这节落到代码。<strong>首次允许出现 <code>np.exp</code>、<code>sklearn</code> 这种代码术语</strong>。梯度公式 $(p - y) \cdot x$ 在 ③ 推出来了，这里直接拿来用</td>
+      </tr>
+      <tr>
+        <td>⑤ 测试</td>
+        <td>8 道选择题</td>
+        <td>检查盲点。比如"logistic 这个词到底指什么"（是 logit，不是逻辑判断）、"sklearn 的 C 越小是强还是弱正则化"（C = 1/λ，反着的）—— 都是容易混的地方</td>
+      </tr>
+      <tr>
+        <td>⑥ 后续</td>
+        <td>softmax 多分类、非线性边界、逻辑回归 → 神经网络的过渡</td>
+        <td>逻辑回归是<strong>单个神经元</strong>。把它堆起来就是神经网络的隐藏层，把 sigmoid 换成 softmax 就是多分类。这节给出下一步的路标</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>三条暗线（贯穿全课，不止一节）</h3>
+  <ol>
+    <li><strong>每个设计都是 MLE 的副产品</strong>。sigmoid 来自"log-odds 线性"假设的代数推导（②），对数损失来自"伯努利分布 + 最大似然"的推导（③）。它们不是凑出来的，是<strong>同一个统计框架的两端</strong> —— 跟线性回归 MSE 来自"高斯噪声 MLE"是完全平行的故事</li>
+    <li><strong>和线性回归对照着学</strong>。模型上多套一层 sigmoid、损失从 MSE 换成对数损失、但梯度公式 $(p - y) \cdot x$ 和线性回归 $(\hat y - y) \cdot x$ 长得<strong>一模一样</strong>。会刻意在每一节标出"这里和线性回归的区别 / 相同"</li>
+    <li><strong>"为什么不行"驱动下一步</strong>。① 用线性回归预测 0/1 失败 → 推出 sigmoid；③ 沿用 MSE 失败 → 推出对数损失；③ 对数损失在线性可分数据上失败 → 推出正则化。每一节都在补上一节漏的洞</li>
+  </ol>
+</section>
+
 <div class="toc">
   <span class="toc-title">目录</span>
-  <a href="#prep">⓪ 数学预热</a>
-  <a href="#intro">① 简介</a>
-  <a href="#prob">② 计算概率</a>
-  <a href="#loss">③ 损失和正则化</a>
-  <a href="#code">④ 编程练习</a>
-  <a href="#quiz">⑤ 测试</a>
-  <a href="#next">⑥ 后续</a>
+  <!-- 链接由 JS 在 DOMContentLoaded 时自动从 section[id] > h2 + h3 生成 -->
 </div>
 
 <!-- ===================== 0 数学预热 ===================== -->
@@ -618,22 +671,94 @@
   <h3>3.3 正则化：防止过拟合</h3>
 
   <h4>逻辑回归的过拟合长什么样？</h4>
-  <p>训练里如果数据正好"能被一条直线分开"（线性可分），逻辑回归会做一件<strong>反直觉的坏事</strong>：</p>
-  <p>因为损失 $-\ln p$ 永远能通过把 $p$ 推到更接近 0 或 1 来继续减少，模型会让 $|\mathbf{w}|$ <strong>无限增大</strong>，使 sigmoid 输出变成"硬"判断（要么 0 要么 1，决策边界变得无限陡）。</p>
-  <p>这会导致：</p>
-  <ul>
-    <li>对训练集过度自信（每个点都贴近 0 或 1）</li>
-    <li>对测试集稍微换个数据就剧烈出错</li>
-    <li>参数 $w$ 数值巨大，模型不稳定</li>
-  </ul>
+  <p>训练里如果数据正好"能被一条直线分开"（<strong>线性可分</strong>——一侧全 $y=1$、另一侧全 $y=0$，中间没有任何"骑墙"点），逻辑回归会做一件反直觉的事：<strong>训练永远不收敛，$|\mathbf{w}|$ 一路飙到无穷大</strong>。</p>
+
+  <p><strong>为什么停不下来？</strong></p>
+  <p>回想 3.2 节，每个点的损失是 $-\ln p$（当 $y=1$）或 $-\ln(1-p)$（当 $y=0$）。这个损失只在 $p$ <strong>严格等于</strong> 1 或 0 时才为 0。但 sigmoid 永远<strong>取不到</strong> 0 或 1，只能无限接近：</p>
+  <table>
+    <tr><th>$z = wx+b$</th><th>$p = \sigma(z)$</th><th>$-\ln p$（损失）</th></tr>
+    <tr><td>2</td><td>0.881</td><td>0.127</td></tr>
+    <tr><td>5</td><td>0.993</td><td>$6.7 \times 10^{-3}$</td></tr>
+    <tr><td>10</td><td>0.99995</td><td>$4.5 \times 10^{-5}$</td></tr>
+    <tr><td>20</td><td>$1 - 2 \times 10^{-9}$</td><td>$2.1 \times 10^{-9}$</td></tr>
+  </table>
+  <p>每把 $z$ 放大一倍，损失就再少一截。因为 $z = wx + b$，<strong>放大 $w$ 就是放大 $z$</strong>。只要数据真的线性可分，优化器每一步都会发现"$w$ 翻倍一下，损失还能再降"——于是 $|w|$ 一路飙升，<strong>收敛不到任何有限值</strong>。</p>
+
+  <p><strong>$|w|$ 大了到底哪里坏？</strong></p>
+  <p>先看一个几何现象，再看它带来的两个后果。</p>
+
+  <p><strong>几何现象：sigmoid 退化成阶跃函数。</strong> sigmoid 的"过渡区"（从 $p=0.1$ 升到 $p=0.9$ 那段）宽度大约是 $4.4/|w|$。$|w|=1$ 时过渡区有 4.4 个单位宽，$|w|=100$ 时只剩 0.044——决策边界从"缓坡"变成"一刀切"，边界两侧的点全被赋 $p \approx 1$ 或 $p \approx 0$，<strong>"中间地带"消失</strong>。</p>
+
+  <p>"中间地带"消失会带来两个直接后果：</p>
+  <ol>
+    <li><strong>过度自信 → 测试集翻车</strong>：训练点都被赋 $p \approx 1$ 或 $p \approx 0$，模型说"我 99.999% 确定"。但测试集点稍微挪一点（哪怕一点点噪声），就可能跨过那个无限陡的边界，预测从 1 翻到 0，错得彻底。<strong>边界越陡，模型对小扰动越敏感</strong>——这就是"中间地带消失"的直接物理表现。</li>
+    <li><strong>概率失去意义</strong>：逻辑回归比硬分类器值钱就值钱在它输出<strong>概率</strong>——能表达"非常确定"还是"将将过线"。"中间地带"消失之后概率退化成 0/1，这个区分能力没了，模型变成一个比阶跃函数贵一点的硬分类器。</li>
+  </ol>
+
+  <div class="why">
+    <strong>关于 $b$：</strong>严格说，线性可分场景里 $b$ 也跟着爆——上面那个 100000 步训练里 $w \approx 6.82, b \approx -30.58$，$b$ 反而长得更狠。但决定 sigmoid <strong>陡度</strong>的是 $|w|$（过渡区宽度 $\approx 4.4/|w|$，跟 $b$ 无关），$b$ 只决定决策边界<strong>位置</strong>（$x = -b/w$）。所以"sigmoid 变阶跃"这个核心论点只跟 $|w|$ 有关，聚焦 $|w|$ 是抓主因；完整说应该是参数范数 $\|(\mathbf{w}, b)\|$ 一起膨胀。
+  </div>
+
+  <h4>互动：看 $|w|$ 怎么爆炸</h4>
+  <p>数据强行线性可分：<code>x ∈ {1,2,3,4}</code> 全是 0，<code>x ∈ {5,6,7,8}</code> 全是 1，中间留空（<strong>没有任何骑墙点</strong>——只要中间有一个夹在两类之间的点，最优 $w$ 就有限了）。拖动训练步数看 sigmoid 怎么从"缓坡"变成"台阶"：</p>
+  <div class="controls">
+    <label>训练步数 = <input type="range" id="sep-step" min="1" max="5" step="1" value="2"><span class="val" id="sep-step-val">100</span></label>
+    <span>|w| = <span class="val" id="sep-wnorm">—</span></span>
+    <span>训练损失 = <span class="val" id="sep-loss">—</span></span>
+    <span>过渡区宽度 = <span class="val" id="sep-trans">—</span></span>
+  </div>
+  <svg id="plot-sep" viewBox="0 0 640 320"></svg>
+  <div class="why">
+    拖到 10 万步：$|w| \approx 6.8$，sigmoid 的过渡区只剩约 0.64 个单位宽，曲线几乎垂直。但训练损失还是 $\approx 0.008$、<strong>永远到不了 0</strong>——因为 sigmoid 永远取不到 1。再训下去 $|w|$ 还会继续涨，损失还会更小一点点，但优化器永远没有"停下来"的理由。
+  </div>
 
   <h4>解决：在损失里加"权重大小的惩罚"</h4>
-  <p><strong>L2 正则化（Ridge）</strong>：</p>
+
+  <p>思路：原来损失只关心"拟合数据多准"，现在再加一项关心"参数有多大"，两项相加做总损失。参数越大，总损失越大，梯度下降就会自己把 $|w|$ 拉回合理范围、不会爆。</p>
+
+  <p>"参数有多大"怎么量？两种最直观的办法：</p>
+  <ul>
+    <li>把所有 $w_j$ <strong>平方</strong>加起来：$w_1^2 + w_2^2 + \dots$ → 叫 <strong>L2 正则化</strong>（也叫 Ridge）</li>
+    <li>把所有 $w_j$ 取<strong>绝对值</strong>加起来：$|w_1| + |w_2| + \dots$ → 叫 <strong>L1 正则化</strong>（也叫 Lasso）</li>
+  </ul>
+  <p class="meta">"L1 / L2" 里的 "L" 来自数学里的 $L_p$ 范数（一族衡量"向量大小"的方式）：$p=2$ 时 = 先平方再求和（再开方），就是几何里直线长度；$p=1$ 时 = 绝对值求和。本课不展开范数理论，记住 "L2 平方、L1 绝对值" 就够用。</p>
+
+  <p><strong>L2 正则化（Ridge）的完整损失</strong>：</p>
   <p>$$L_{\text{total}} = L_{\text{logloss}} + \lambda \sum_j w_j^2$$</p>
-  <p>$\lambda$ 是"正则化强度"，越大越倾向于让 $w$ 小。</p>
-  <p><strong>L1 正则化（Lasso）</strong>：</p>
+  <p>$\lambda$（读 lambda）是<strong>正则化强度</strong>超参数：$\lambda = 0$ 退化成不加正则；$\lambda$ 越大越强烈压制 $w$。</p>
+
+  <p><strong>L1 正则化（Lasso）的完整损失</strong>：</p>
   <p>$$L_{\text{total}} = L_{\text{logloss}} + \lambda \sum_j |w_j|$$</p>
-  <p>L1 会让<strong>一部分 $w_j$ 精确等于 0</strong>，相当于自动做特征选择。</p>
+  <p>跟 L2 只差一个绝对值（平方 → 绝对值），但行为大不一样：L1 会让<strong>一部分 $w_j$ 精确等于 0</strong>（下面解释为啥）。</p>
+
+  <details>
+    <summary>展开：Ridge / Lasso 名字怎么来的、L2 为啥不带根号（可跳过，纯典故）</summary>
+    <p><strong>Ridge（岭回归）</strong>：来自线性回归求最优 $w$ 的"正规方程"——里面要算一个矩阵的逆。加 L2 正则相当于在那个矩阵的主对角线上"加一道山脊"（ridge），让矩阵更稳定（即使本来求不了逆的情况也能求）。涉及矩阵代数细节，不影响理解 L2 本身。</p>
+    <p><strong>Lasso</strong>：<strong>L</strong>east <strong>A</strong>bsolute <strong>S</strong>hrinkage and <strong>S</strong>election <strong>O</strong>perator 的首字母缩写——同时"压缩"（让 $w$ 变小）和"选择"（精确选哪些 $w$ 归 0）。</p>
+    <p><strong>L2 公式为啥不带根号</strong>：数学上 L2 范数本身是 $\sqrt{\sum w_j^2}$（向量长度），但放进损失里我们直接用 $\sum w_j^2$（去掉根号）。原因是去根号后对 $w$ 求导更干净（变成 $2w$，没烦人的根号链式），最优 $w$ 的方向跟带根号版本一致，只是数值缩放不同。</p>
+  </details>
+
+  <p><strong>为什么 L1 能把权重精确归 0，L2 不能？</strong></p>
+  <p>看正则项对 $w$ 的梯度（数据损失梯度暂时不管）：</p>
+  <table>
+    <tr><th>正则项</th><th>梯度</th><th>$w$ 接近 0 时的拉力</th></tr>
+    <tr><td>L2: $\lambda w^2$</td><td>$2\lambda w$</td><td>越小越弱（$w \to 0$ 时拉力 $\to 0$）</td></tr>
+    <tr><td>L1: $\lambda |w|$</td><td>$\lambda \cdot \text{sign}(w)$</td><td>恒定 $\lambda$（永远拉同样狠）</td></tr>
+  </table>
+  <p>L2 把 $w$ 推向 0 但"懒得"拉到 0（快到 0 时拉力消失），停在很小的非零值；L1 哪怕 $w$ 已经很小也照样恒定拉，数据损失的微弱推力顶不住，$w$ 直接被推过 0、停在 0 上。<strong>所以 L1 适合"很多特征但只有少数重要"的场景，L2 适合"所有特征都有点用"的场景</strong>。</p>
+
+  <div class="warn">
+    <strong>等等，加了惩罚不会让损失"降不下去"吗？</strong> 常见疑问。直觉错在把损失看成"单一目标"——其实总损失是<strong>两个对抗力</strong>的合：
+    <ul>
+      <li>$L_{\text{data}}$：想让 $|w|$ 变大去拟合数据——但 $|w|$ 越大它能再降的空间越小</li>
+      <li>$\lambda \|w\|^2$：想让 $|w|$ 变小——但 $|w|$ 越大它涨得越快（$w^2$ 是抛物线）</li>
+    </ul>
+    GD 收敛到一个<strong>平衡点</strong> $w^*$：在那里两边梯度正好抵消（数据梯度 + 正则梯度 = 0）。这个 $w^*$ 是<strong>有限值</strong>——不像不加正则时 $|w| \to \infty$。
+    <br><br>
+    <strong>橡皮筋类比</strong>：把 $w$ 想成一颗珠子，一根橡皮筋被"数据"往外拉，一根被"正则"往 0 拉，两根都是越拉越紧。最终珠子停在两边拉力相等的位置——既不到 0（数据橡皮筋顶住），也不到无穷（正则橡皮筋顶住）。
+    <br><br>
+    <strong>关键认知</strong>：加正则后最终的训练损失会比"不加正则时的训练损失"<strong>大</strong>——但不加时那个"小损失"是过拟合的产物（训练集贴近 0、泛化烂）。加正则后这个"中等损失"对应的 $w$ 是有限的、泛化更好的 $w$，这正是要的。<strong>训练损失不再是唯一目标，泛化才是。</strong>
+  </div>
 
   <h4>互动：拉 λ 看效果</h4>
   <p>同样的 2D 数据，看不同 $\lambda$ 下决策边界的差异：</p>
@@ -1264,6 +1389,86 @@ function drawReg() {
 document.getElementById("reg-lambda").addEventListener("input", drawReg);
 drawReg();
 
+// =========== 3.3 线性可分 → |w| 爆炸演示 ===========
+const SEP_DATA = [
+  [1, 0], [2, 0], [3, 0], [4, 0],
+  [5, 1], [6, 1], [7, 1], [8, 1]
+];
+const SEP_STEPS = [10, 100, 1000, 10000, 100000];
+const SEP_CKPT = {};
+(function precomputeSep(){
+  const want = new Set(SEP_STEPS);
+  const N = SEP_DATA.length;
+  let w = 0, b = 0;
+  const lr = 0.1;
+  const maxStep = SEP_STEPS[SEP_STEPS.length - 1];
+  for (let step = 1; step <= maxStep; step++) {
+    let dw = 0, db = 0;
+    for (let i = 0; i < N; i++) {
+      const [xi, yi] = SEP_DATA[i];
+      const p = sigmoid(w*xi + b);
+      dw += (p - yi) * xi;
+      db += (p - yi);
+    }
+    dw /= N; db /= N;
+    w -= lr * dw; b -= lr * db;
+    if (want.has(step)) {
+      let loss = 0;
+      for (let i = 0; i < N; i++) {
+        const [xi, yi] = SEP_DATA[i];
+        const p = sigmoid(w*xi + b);
+        loss += -(yi*Math.log(p + 1e-12) + (1-yi)*Math.log(1 - p + 1e-12));
+      }
+      loss /= N;
+      SEP_CKPT[step] = { w, b, loss };
+    }
+  }
+})();
+
+function drawSep() {
+  const idx = +document.getElementById("sep-step").value;
+  const step = SEP_STEPS[idx - 1];
+  document.getElementById("sep-step-val").textContent = step.toLocaleString();
+  const { w, b, loss } = SEP_CKPT[step];
+  const trans = 2 * Math.log(9) / Math.abs(w);
+  document.getElementById("sep-wnorm").textContent = Math.abs(w).toFixed(2);
+  document.getElementById("sep-loss").textContent = loss.toFixed(4);
+  document.getElementById("sep-trans").textContent = trans.toFixed(2);
+
+  const svg = document.getElementById("plot-sep");
+  clear(svg);
+  const ax = makeAxes(svg, {
+    xMin: 0, xMax: 9, yMin: -0.15, yMax: 1.15,
+    w: 640, h: 320, m: {l:50, r:20, t:24, b:40},
+    xTicks: [0,1,2,3,4,5,6,7,8,9], yTicks: [0, 0.5, 1],
+    xLabel: "x（线性可分数据）", yLabel: "p"
+  });
+  // p = 0.5 参考线
+  svg.appendChild(svgEl("line", {
+    x1: ax.xPx(0), y1: ax.yPx(0.5), x2: ax.xPx(9), y2: ax.yPx(0.5),
+    stroke: "#cbd5e1", "stroke-width": 1, "stroke-dasharray": "3,3"
+  }));
+  // 决策边界 x = -b/w
+  if (Math.abs(w) > 1e-6) {
+    const xd = -b / w;
+    if (xd > 0 && xd < 9) {
+      svg.appendChild(svgEl("line", {
+        x1: ax.xPx(xd), y1: ax.yPx(-0.15), x2: ax.xPx(xd), y2: ax.yPx(1.15),
+        stroke: "#7c3aed", "stroke-width": 1.5, "stroke-dasharray": "5,4"
+      }));
+      lbl(svg, ax.xPx(xd) + 5, ax.yPx(1.08), `决策边界 x=${xd.toFixed(2)}`, "#7c3aed", 11);
+    }
+  }
+  // sigmoid 曲线（高采样率，避免阶跃丢精度）
+  plotCurve(svg, x => sigmoid(w*x + b), 0, 9, ax, "#2563eb", 2.5, null, 1200);
+  // 数据点
+  for (const [x, y] of SEP_DATA) {
+    dot(svg, ax.xPx(x), ax.yPx(y), y === 1 ? "#16a34a" : "#dc2626", 5);
+  }
+}
+document.getElementById("sep-step").addEventListener("input", drawSep);
+drawSep();
+
 // =========== quiz ===========
 document.querySelectorAll(".quiz-q").forEach(q => {
   const correct = q.dataset.correct;
@@ -1279,14 +1484,61 @@ document.querySelectorAll(".quiz-q").forEach(q => {
   });
 });
 
-/* 目录：克隆链接到抽屉 + 滚动高亮同步两边 */
+/* 目录：自动扫 h2/h3 → 生成嵌套 TOC → 同步到抽屉 → 滚动高亮 */
 (function () {
+  const tocEl = document.querySelector(".toc");
   const drawerNav = document.getElementById("tocDrawerNav");
-  if (drawerNav) {
-    document.querySelectorAll(".toc a").forEach(a => {
-      drawerNav.appendChild(a.cloneNode(true));
-    });
+  if (!tocEl) return;
+
+  // 给 h3 自动生成 id (slug 化中文+字母数字,去掉编号前缀)
+  function slug(text) {
+    return text.trim()
+      .toLowerCase()
+      .replace(/^[\d.⓪①②③④⑤⑥⑦⑧⑨⑩]+\s*/, "")
+      .replace(/[\s/:：、,，()（）]+/g, "-")
+      .replace(/[^a-z0-9一-龥-]/g, "")
+      .replace(/^-+|-+$/g, "")
+      .substring(0, 50) || "h3";
   }
+  const usedIds = new Set();
+  function uniqueId(base) {
+    let id = base, n = 2;
+    while (usedIds.has(id) || document.getElementById(id)) { id = base + "-" + n; n++; }
+    usedIds.add(id);
+    return id;
+  }
+
+  // 扫描所有 section[id] 的 h2,及 section 内的 h3
+  const items = [];
+  document.querySelectorAll("section[id]").forEach(section => {
+    const h2 = section.querySelector(":scope > h2");
+    if (!h2) return;
+    items.push({ id: section.id, level: 2, text: h2.textContent.trim() });
+    section.querySelectorAll(":scope > h3").forEach(h3 => {
+      let id = h3.id;
+      if (!id) {
+        id = uniqueId(slug(h3.textContent));
+        h3.id = id;
+      }
+      items.push({ id, level: 3, text: h3.textContent.trim() });
+    });
+  });
+
+  // 注入主目录
+  items.forEach(item => {
+    const a = document.createElement("a");
+    a.href = "#" + item.id;
+    a.textContent = item.text;
+    a.classList.add(item.level === 2 ? "toc-h2" : "toc-h3");
+    tocEl.appendChild(a);
+  });
+
+  // 同步到抽屉
+  if (drawerNav) {
+    tocEl.querySelectorAll("a").forEach(a => drawerNav.appendChild(a.cloneNode(true)));
+  }
+
+  // 滚动高亮
   const allLinks = document.querySelectorAll(".toc a, #tocDrawerNav a");
   if (!allLinks.length) return;
   const linkMap = new Map();
@@ -1295,14 +1547,15 @@ document.querySelectorAll(".quiz-q").forEach(q => {
     if (!linkMap.has(id)) linkMap.set(id, []);
     linkMap.get(id).push(a);
   });
-  const sections = Array.from(linkMap.keys())
+  const targets = Array.from(linkMap.keys())
     .map(id => document.getElementById(id))
     .filter(Boolean);
+
   function update() {
     const probe = window.innerHeight * 0.25;
-    let current = sections[0];
-    for (const s of sections) {
-      if (s.getBoundingClientRect().top <= probe) current = s;
+    let current = targets[0];
+    for (const t of targets) {
+      if (t.getBoundingClientRect().top <= probe) current = t;
       else break;
     }
     allLinks.forEach(a => a.classList.remove("active"));
